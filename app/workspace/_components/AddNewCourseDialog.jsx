@@ -34,10 +34,9 @@ function AddNewCourseDialog({ children }) {
         noOfChapter:1,
         category:'',
         level:''
-    });
+    })
 
     const router = useRouter();
-
 
 
     const onHandleInputChange = (field,value)=>{
@@ -47,8 +46,7 @@ function AddNewCourseDialog({ children }) {
         }));
         console.log(formData);
     }
-
-    const onGenerate = async ()=>{
+const onGenerate = async ()=>{
         console.log(formData);
         const courseId = uuidv4();
         try{
@@ -59,7 +57,7 @@ function AddNewCourseDialog({ children }) {
         })
         console.log(result.data);
         setLoading(false);
-        router.push('/workspace/edit-course/'+courseId);
+        router.push('/workspace/edit-course/'+result.data?.courseId);
 
     }catch(e){
         setLoading(false);

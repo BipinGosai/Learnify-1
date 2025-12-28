@@ -1,6 +1,7 @@
 "use client"
 
-import { Link, PlayCircle } from 'lucide-react';
+import Link from 'next/link';
+import { PlayCircle } from 'lucide-react';
 import Image from 'next/image';
 import React from 'react'
 import { Button } from '@/components/ui/button';
@@ -23,10 +24,10 @@ function EnrollCourseCard({course,enrollCourse}) {
         <p className='line-clamp-3 text-grey-400 text-sm'>{courseJson?.description}</p>
         <div> 
             <h2 className='flex justify-between text-sm text-primary'>Progress <span>{CalculatePerProgress()}%</span></h2>
-            <div className='bg-purple-300 h-2 rounded-full'>
+            <div className='bg-purple-200 h-2 rounded-full'>
                 <Progress value={CalculatePerProgress()}/>
             </div>
-            <Button className={'w-full mt-3'}><PlayCircle/> Continue Learning</Button>
+            <Link href={'/workspace/view-course/' + course?.cid}><Button className={'w-full mt-3'}><PlayCircle />Continue Learning</Button></Link>
         </div>
       </div>
     </div>

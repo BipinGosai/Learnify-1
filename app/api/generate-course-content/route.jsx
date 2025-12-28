@@ -1,127 +1,84 @@
-import { db } from "@/config/db";
-import { eq } from "drizzle-orm";
-import OpenAI from 'openai';
-import { NextResponse } from "next/server";
-import { coursesTable } from "@/config/schema";
-
-// Initialize OpenAI with OpenRouter
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "http://localhost:3000", // Your site URL
-    "X-Title": "Learnify" // Your app name
-  }
-});
+import { db } from '@/config/db';
+import { eq } from 'drizzle-orm';
+import axios from 'axios';
+import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { coursesTable } from '@/config/schema';
 
 const PROMPT = `Depends on Chapter name and Topic. Generate content for each topic in HTML and give the response in JSON format.
 Schema:
 {
   "chapterName": "<>",
-  "topics": 
+  "topics":
     {
       "topic": "<>",
       "content": "<>"
     }
 }
-:User Input:`;
+:User Input:
+`;
 
 export async function POST(req) {
     const { courseJson, courseTitle, courseId } = await req.json();
 
-    // Development mock response
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock course content in development mode');
-        const mockChapters = courseJson?.chapters?.map(chapter => ({
-            chapterName: chapter.chapterName,
-            topics: chapter.topics.map(topic => ({
-                topic,
-                content: `<p>This is mock content for <strong>${topic}</strong> in development mode.</p>`
-            })),
-            youtubeVideos: [
-                { videoId: 'dQw4w9WgXcQ', title: 'Sample Video 1' },
-                { videoId: 'dQw4w9WgXcQ', title: 'Sample Video 2' }
-            ]
-        }));
+    const promises = courseJson?.chapters?.map(async (chapter) => {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-        await db.update(coursesTable)
-            .set({ courseContent: mockChapters })
-            .where(eq(coursesTable.cid, courseId));
+        const result = await model.generateContent(PROMPT + JSON.stringify(chapter));
+        const response = await result.response;
+        const text = response.text();
 
-        return NextResponse.json({
-            success: true,
-            courseName: courseTitle,
-            courseContent: mockChapters
-        });
-    }
+        // Clean the response
+        const RawJson = text.replace('```json', '').replace('```', '').trim();
+        const JSONResp = JSON.parse(RawJson);
 
-    try {
-        const results = await Promise.all(
-            courseJson?.chapters?.map(async (chapter) => {
-                try {
-                    // Generate content using OpenRouter
-                    const response = await openai.chat.completions.create({
-                        model: "meta-llama/llama-3.2-3b-instruct:free", // free model from OpenRouter
-                        messages: [{
-                            role: "user",
-                            content: PROMPT + JSON.stringify(chapter)
-                        }],
-                        response_format: { type: "json_object" }
-                    });
+        // Get YouTube videos
+        const youtubeData = await GetYoutubeVideo(chapter?.chapterName);
 
-                    const content = response.choices[0]?.message?.content;
-                    const chapterData = JSON.parse(content);
-
-                    // Get YouTube videos
-                    const youtubeData = await GetYoutubeVideo(chapter?.chapterName);
-
-                    return {
-                        youtubeVideo: youtubeData,
-                        courseData: chapterData
-                    };
-                } catch (error) {
-                    console.error(`Error processing chapter ${chapter.chapterName}:`, error);
-                    throw error;
-                }
-            })
-        );
-
-        // Save to database
-        await db.update(coursesTable)
-            .set({ courseContent: results })
-            .where(eq(coursesTable.cid, courseId));
-
-        return NextResponse.json({
-            success: true,
-            courseName: courseTitle,
-            CourseContent: results
+        console.log({
+            youtubeVideo: youtubeData,
+            courseData: JSONResp
         });
 
-    } catch (error) {
-        console.error('Error in generate-course-content:', error);
-        return NextResponse.json(
-            { 
-                success: false,
-                error: error.message || 'Failed to generate course content'
-            },
-            { status: 500 }
-        );
-    }
+        return {
+            youtubeVideo: youtubeData,
+            courseData: JSONResp
+        };
+    });
+
+    const CourseContent = await Promise.all(promises);
+
+    // Save to database
+    const dbResp = await db.update(coursesTable).set({
+        courseContent: CourseContent
+    }).where(eq(coursesTable.cid, courseId));
+
+    return NextResponse.json({
+        courseName: courseTitle,
+        CourseContent: CourseContent
+    });
 }
 
-// Your existing GetYoutubeVideo function remains the same
-const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
+// YouTube API helper function
 const GetYoutubeVideo = async (topic) => {
-    const params = {
-        part: 'snippet',
-        q: topic,
-        maxResults: 4,
-        type: 'video',
-        key: process.env.YOUTUBE_API_KEY
-    };
-    const resp = await axios.get(YOUTUBE_BASE_URL, { params });
-    return resp.data.items.map(item => ({
-        videoId: item.id?.videoId,
-        title: item?.snippet?.title
-    }));
+    try {
+        const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
+        const params = {
+            part: 'snippet',
+            q: `${topic} tutorial`,
+            maxResults: 4,
+            type: 'video',
+            key: process.env.YOUTUBE_API_KEY
+        };
+        const resp = await axios.get(YOUTUBE_BASE_URL, { params });
+        return resp.data.items.map(item => ({
+            videoId: item.id?.videoId,
+            title: item.snippet?.title,
+            thumbnail: item.snippet?.thumbnails?.medium?.url
+        }));
+    } catch (error) {
+        console.error('Error fetching YouTube videos:', error);
+        return []; // Return empty array instead of failing the whole request
+    }
 };

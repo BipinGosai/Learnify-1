@@ -1,0 +1,6 @@
+- [x] Import NextResponse from 'next/server' in route.jsx
+- [x] Update Gemini model name to 'gemini-1.5-flash'
+- [x] Parse AI response text as JSON and return it properly
+- [x] Add basic error handling for the AI call
+- [x] Fix Google AI library import and usage
+- [ ] Test the API endpoint to ensure 500 error is resolved

@@ -2,13 +2,14 @@
 
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
-import { Book, Clock, Loader2, Settings, TrendingUp } from 'lucide-react';
+import { Book, Clock, Loader2, PlayCircle, Settings, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
-function CourseInfo({ course }) {
+function CourseInfo({ course, viewCourse }) {
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -86,7 +87,8 @@ const GenerateCourseContent = async () => {
                     </div>
                 </div>
                 
-                <Button 
+               {!viewCourse ?
+               <Button 
                     onClick={GenerateCourseContent} 
                     disabled={loading}
                     className='max-w-sm mt-2 gap-2'
@@ -103,10 +105,12 @@ const GenerateCourseContent = async () => {
                         </>
                     )}
                 </Button>
+                :<Link href={'/course/'+course?.cid}>
+                <Button><PlayCircle/> Continue Lerning </Button></Link>}
             </div>
             
             {course?.bannerImageUrl ? (
-                <div className='relative w-full md:w-1/2 lg:w-1/3 h-[240px] mt-5 md:mt-0 rounded-2xl overflow-hidden'>
+                <div className='relative w-full md:w-1/2 lg:w-1/3 h-60 mt-5 md:mt-0 rounded-2xl overflow-hidden'>
                     <Image 
                         src={course.bannerImageUrl} 
                         alt='Course banner'
@@ -116,7 +120,7 @@ const GenerateCourseContent = async () => {
                     />
                 </div>
             ) : (
-                <div className='w-full md:w-1/2 lg:w-1/3 h-[240px] mt-5 md:mt-0 rounded-2xl bg-gray-100 flex items-center justify-center'>
+                <div className='w-full md:w-1/2 lg:w-1/3 h-60 mt-5 md:mt-0 rounded-2xl bg-gray-100 flex items-center justify-center'>
                     <span className='text-gray-400'>No banner image</span>
                 </div>
             )}
