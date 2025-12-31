@@ -29,8 +29,7 @@ export default function Home() {
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
           <a href="#features" className="hover:text-purple-600 cursor-pointer transition-colors">Features</a>
-          <a href="#pricing" className="hover:text-purple-600 cursor-pointer transition-colors">Pricing</a>
-          <a href="#testimonials" className="hover:text-purple-600 cursor-pointer transition-colors">Testimonials</a>
+          <a href="#how-it-works" className="hover:text-purple-600 cursor-pointer transition-colors">How It Works</a>
         </div>
       </nav>
 
@@ -62,24 +61,13 @@ export default function Home() {
           {/* HERO IMAGE CONTAINER */}
           <div className="relative group">
             <div className="w-full aspect-[4/3] bg-white/10 rounded-[2.5rem] border border-white/20 backdrop-blur-md overflow-hidden flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
-              
-              {/* REPLACE '/your-photo.png' WITH YOUR ACTUAL IMAGE PATH */}
               <Image 
-                src="/your-photo.png" 
+                src="/photo.png" 
                 alt="AI Learning Platform Preview"
                 fill
                 className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
               />
-
-              <div className="absolute bottom-8 left-8 bg-white p-5 rounded-[1.5rem] shadow-2xl flex items-center gap-4 text-slate-800 animate-bounce">
-                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
-                  <Bolt size={24} />
-                </div>
-                <div>
-                  <div className="text-base font-bold">98% Completion</div>
-                  <div className="text-xs text-slate-500">Industry leading results</div>
-                </div>
-              </div>
+              {/* 98% Completion Badge Removed */}
             </div>
           </div>
         </div>
@@ -99,35 +87,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* --- TESTIMONIALS SECTION --- */}
-      <section id="testimonials" className="py-32 bg-purple-50/50 px-6 md:px-12 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Loved by Learners</h2>
-            <p className="text-slate-500 text-lg">Real feedback from our global community of students</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <TestimonialCard name="Marcus Johnson" role="Full Stack Developer" text="Learnify's AI completely changed how I learn. The personalized paths saved me months of wasted time." />
-            <TestimonialCard name="Emily Rodriguez" role="Data Scientist" text="The AI mentor feature is incredible! I have an answer to every question I ask, 24/7. It's truly a game changer." />
-            <TestimonialCard name="David Chen" role="Product Manager" text="Best investment I've made in my career. The quality of content and AI personalization is unmatched." />
-          </div>
-        </div>
-      </section>
-
-      {/* --- PRICING SECTION --- */}
-      <section id="pricing" className="py-32 bg-white px-6 md:px-12 border-y border-purple-50 scroll-mt-20">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-20">Choose the plan that fits your goals</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <PricingCard title="Free" price="$0" subtitle="Always free for individuals" features={["Basic AI Access", "Limited Courses", "Community Support"]} />
-            <PricingCard title="Starter" price="$6.99" subtitle="Create AI Courses & learn" billedInfo="Billed annually" features={["AI Course Generation", "Course Banner Images", "Priority Email Support"]} />
-            <PricingCard title="Premium" price="$7.99" subtitle="Full power of AI Learning" billedInfo="Billed annually" features={["Unlimited AI Generation", "Custom Banner Design", "24/7 Direct Support"]} />
-          </div>
-        </div>
-      </section>
+      {/* --- PRICING SECTION REMOVED --- */}
 
       {/* --- HOW IT WORKS --- */}
-      <section className="py-32 bg-purple-600 text-white px-6 md:px-12">
+      <section id="how-it-works" className="py-32 bg-purple-600 text-white px-6 md:px-12 scroll-mt-20">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-16 flex items-center justify-center gap-4">How It Works <span className="text-purple-200">🤔</span></h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -175,7 +138,7 @@ export default function Home() {
             <h4 className="font-bold text-white mb-8">Platform</h4>
             <ul className="space-y-4 text-slate-400 text-sm">
               <li><a href="#features" className="hover:text-purple-400 transition">Features</a></li>
-              <li><a href="#pricing" className="hover:text-purple-400 transition">Pricing</a></li>
+              <li><a href="#how-it-works" className="hover:text-purple-400 transition">How It Works</a></li>
             </ul>
           </div>
           <div>
@@ -200,44 +163,6 @@ export default function Home() {
 }
 
 // --- SUB-COMPONENTS ---
-
-function PricingCard({ title, price, subtitle, billedInfo, features }) {
-  return (
-    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-purple-100/30 flex flex-col text-left overflow-hidden transition-all hover:border-purple-200">
-      <div className="p-10 pb-6">
-        <h3 className="text-2xl font-bold text-slate-900 mb-6">{title}</h3>
-        <div className="mb-4">
-          <span className="text-5xl font-extrabold text-slate-900">{price}</span>
-          {billedInfo && <span className="text-slate-400 text-lg ml-1 font-medium">/mo</span>}
-        </div>
-        <p className="text-slate-500 text-sm mb-8 font-medium">{subtitle}</p>
-        {billedInfo && (
-          <div className="flex items-center gap-3 mb-6 p-1.5 bg-purple-50 rounded-full w-fit pr-4 border border-purple-100">
-            <div className="w-10 h-5 bg-purple-600 rounded-full relative">
-               <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
-            </div>
-            <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">{billedInfo}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="px-10 pt-8 pb-10 border-t border-purple-50 flex-grow bg-purple-50/30">
-        <ul className="space-y-5 mb-10">
-          {features.map((feature, idx) => (
-            <li key={idx} className="flex items-center gap-4 text-sm text-slate-600 font-medium">
-              <div className="bg-fuchsia-100 p-1 rounded-full"><Check className="text-fuchsia-600" size={12} /></div>
-              {feature}
-            </li>
-          ))}
-        </ul>
-        <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white py-7 rounded-[1.25rem] font-bold shadow-lg transition-all active:scale-95">
-          Switch to this plan
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function FeatureCard({ icon, title, desc, bgColor }) {
   return (
     <div className="bg-white p-10 rounded-[2rem] border border-purple-50 shadow-sm hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 group text-left">
@@ -246,32 +171,6 @@ function FeatureCard({ icon, title, desc, bgColor }) {
       </div>
       <h3 className="text-2xl font-bold mb-4 text-slate-800">{title}</h3>
       <p className="text-slate-500 leading-relaxed">{desc}</p>
-    </div>
-  );
-}
-
-function TestimonialCard({ name, role, text }) {
-  return (
-    <div className="bg-white p-10 rounded-[2.5rem] border border-purple-100/50 space-y-6 shadow-sm hover:shadow-md transition-all text-left">
-      <div className="flex text-amber-400 gap-1">
-        {[...Array(5)].map((_, i) => <Star key={i} size={18} fill="currentColor" />)}
-      </div>
-      <p className="text-slate-600 italic text-lg leading-relaxed font-light">"{text}"</p>
-      <div className="flex items-center gap-4 pt-6 border-t border-purple-50">
-        <div className="w-12 h-12 bg-purple-50 rounded-2xl overflow-hidden ring-4 ring-purple-50">
-          <Image 
-            src={`https://ui-avatars.com/api/?name=${name}&background=9333ea&color=fff`} 
-            width={48} 
-            height={48} 
-            alt={name} 
-            unoptimized
-          />
-        </div>
-        <div>
-          <div className="text-base font-bold text-slate-900">{name}</div>
-          <div className="text-xs text-purple-600 font-semibold uppercase tracking-wider">{role}</div>
-        </div>
-      </div>
     </div>
   );
 }
