@@ -27,6 +27,7 @@ import { toast } from 'sonner'
 
 function AddNewCourseDialog({ children }) {
 
+    const [open, setOpen] = useState(false);
     const [loading,setLoading] = useState(false);
     const [formData,setFormData]=useState({
         name:'',
@@ -71,6 +72,7 @@ const onGenerate = async ()=>{
         console.log(result.data);
         if(result.data.resp=='limit exceed'){
             toast.warning('Please subscribe to plan!')
+            setOpen(false);
             router.push('/workspace/billing');
             setLoading(false);
             return;
@@ -82,6 +84,7 @@ const onGenerate = async ()=>{
             return;
         }
 
+        setOpen(false);
         setLoading(false);
         router.push('/workspace/edit-course/'+nextCourseId);
 
@@ -92,7 +95,7 @@ const onGenerate = async ()=>{
     }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
