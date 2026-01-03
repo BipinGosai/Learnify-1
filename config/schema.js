@@ -1,16 +1,25 @@
 
-import { integer, pgTable, varchar,boolean, json } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, boolean, json, timestamp } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 255 }).notNull(),
   email: varchar({ length: 255 }).notNull().unique(),
-  subscriptionID: varchar('subscriptionId'),
+  passwordHash: varchar('passwordHash', { length: 255 }),
+  subscriptionId: varchar('subscriptionId'),
+});
+
+export const authSessionsTable = pgTable("auth_sessions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  userEmail: varchar('userEmail', { length: 255 }).references(() => usersTable.email).notNull(),
+  tokenHash: varchar('tokenHash', { length: 64 }).notNull().unique(),
+  expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const coursesTable = pgTable("courses",{
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    cid:varchar().notNull(),
+  cid:varchar().notNull().unique(),
     name:varchar(),
     description:varchar(),
     noOfChapters:integer().notNull(),
@@ -20,7 +29,15 @@ export const coursesTable = pgTable("courses",{
     courseJson:json(),
     bannerImageUrl:varchar().default(''),
     courseContent:json().default({}),
-    userEmail:varchar('userEmail').references(()=>usersTable.email).notNull()
+    userEmail:varchar('userEmail').references(()=>usersTable.email).notNull(),
+
+    // Verification workflow
+    reviewStatus: varchar('reviewStatus', { length: 32 }).default('draft').notNull(),
+    reviewRequestedAt: timestamp('reviewRequestedAt', { withTimezone: true }),
+    reviewTokenHash: varchar('reviewTokenHash', { length: 64 }),
+    reviewProfessorEmail: varchar('reviewProfessorEmail', { length: 255 }),
+    reviewFeedback: varchar('reviewFeedback', { length: 4000 }),
+    reviewReviewedAt: timestamp('reviewReviewedAt', { withTimezone: true }),
 })
 
 export const enrollCourseTable=pgTable('enrollCourse',{

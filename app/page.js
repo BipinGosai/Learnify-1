@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   BookOpen,
@@ -49,11 +50,11 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
-              <Button size="lg" className="bg-white text-purple-700 hover:bg-slate-50 rounded-2xl font-bold px-10 h-14 shadow-xl transition-transform hover:scale-105">
-                Get Started
+              <Button asChild size="lg" className="bg-white text-purple-700 hover:bg-slate-50 rounded-2xl font-bold px-10 h-14 shadow-xl transition-transform hover:scale-105">
+                <Link href="/sign-in">Get Started</Link>
               </Button>
-              <Button size="lg" variant="outline" className="rounded-2xl font-bold px-10 h-14 bg-transparent border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm transition-transform hover:scale-105">
-                Sign Up
+              <Button asChild size="lg" variant="outline" className="rounded-2xl font-bold px-10 h-14 bg-transparent border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm transition-transform hover:scale-105">
+                <Link href="/sign-up">Sign Up</Link>
               </Button>
             </div>
           </div>
@@ -120,8 +121,8 @@ export default function Home() {
             Ready to Start Your <br /> Learning Journey? <Rocket className="text-purple-400" size={50} />
           </h2>
           <div className="flex justify-center">
-            <Button size="lg" className="bg-white text-black hover:bg-slate-100 px-16 py-8 text-xl font-bold rounded-2xl shadow-2xl transition-all transform hover:scale-105 active:scale-95">
-              Sign Up
+            <Button asChild size="lg" className="bg-white text-black hover:bg-slate-100 px-16 py-8 text-xl font-bold rounded-2xl shadow-2xl transition-all transform hover:scale-105 active:scale-95">
+              <Link href="/sign-up">Sign Up</Link>
             </Button>
           </div>
         </div>

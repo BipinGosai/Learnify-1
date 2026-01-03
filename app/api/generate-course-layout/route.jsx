@@ -1,10 +1,10 @@
 import { coursesTable } from '@/config/schema'; 
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/config/db';
 import { eq } from 'drizzle-orm';
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { getUserEmailFromRequestAsync } from '@/lib/authServer';
 
 const PROMPT = `Generate Learning Course depends on following details. In which Make sure to add Course Name Description, Chapter Name+ Image Prompt (Create a modern, flat-style 2D digital illustration representing user Topic. Include UI/UX elements such as mockup screens, text blocks, icons, buttons, and creative workspace tools. Add symbolic elements related to user Course, like sticky notes, design components, and visual aids. Use a vibrant color palette (blues, purples, oranges) with a clean, professional look. The illustration should feel creative, tech-savvy, and educational, ideal for visualizing concepts in user Course) for Course Banner in 3d format, Topic under each chapters , Duration for each chapters etc, in JSON format only.
 Schema:{
@@ -32,32 +32,9 @@ Schema:{
 export async function POST(req) {
   try {
     const { courseId, ...formData } = await req.json();
-    const user = await currentUser();
-
-    if (!user) {
+    const userEmail = await getUserEmailFromRequestAsync(req);
+    if (!userEmail) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user subscription plan
-    const { has } = await auth();
-    const plans = ['free', 'starter', 'premium'];
-    let userPlan = 'free'; // default plan
-
-    if (has({ plan: 'premium' })) userPlan = 'premium';
-    else if (has({ plan: 'starter' })) userPlan = 'starter';
-
-    // Set course creation limit based on plan
-    const planLimits = { free: 10, starter: 5, premium: 10 };
-    const maxCourses = planLimits[userPlan];
-
-    // Check how many courses user has already created
-    const existingCourses = await db
-      .select()
-      .from(coursesTable)
-      .where(eq(coursesTable.userEmail, user?.primaryEmailAddress?.emailAddress));
-
-    if (existingCourses.length >= maxCourses) {
-      return NextResponse.json({ resp: 'limit exceed', plan: userPlan });
     }
 
     // Google AI content generation
@@ -66,7 +43,7 @@ export async function POST(req) {
       thinkingConfig: { thinkingBudget: -1 },
       imageConfig: { imageSize: '1K' },
     };
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3-flash';
     const contents = [
       { role: 'user', parts: [{ text: PROMPT + JSON.stringify(formData) }] },
     ];
@@ -102,13 +79,13 @@ export async function POST(req) {
     await db.insert(coursesTable).values({
       ...formData,
       courseJson: JSONResp,
-      userEmail: user?.primaryEmailAddress?.emailAddress,
+      userEmail,
       cid: courseId,
       noOfChapters: JSONResp.course.noOfChapters || 1,
       bannerImageUrl,
     });
 
-    return NextResponse.json({ courseId, plan: userPlan });
+    return NextResponse.json({ courseId });
   } catch (error) {
     console.error('Generate course error:', error);
     return NextResponse.json({ error: 'Failed to generate course', message: error.message }, { status: 500 });

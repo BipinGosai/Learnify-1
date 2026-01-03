@@ -24,6 +24,8 @@ import { Loader2Icon, Sparkle } from 'lucide-react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useContext } from 'react'
+import { UserDetailContext } from '@/context/UserDetailContext'
 
 function AddNewCourseDialog({ children }) {
 
@@ -39,6 +41,22 @@ function AddNewCourseDialog({ children }) {
     })
 
     const router = useRouter();
+    const { userDetail } = useContext(UserDetailContext);
+
+    const CATEGORY_OPTIONS = [
+        'Programming & Software Development',
+        'Web Development',
+        'Mobile App Development',
+        'Data Structures & Algorithms',
+        'Data Science',
+        'Machine Learning & AI',
+        'Cybersecurity',
+        'Cloud & DevOps',
+        'Databases',
+        'UI/UX Design',
+        'Product Management',
+        'Digital Marketing',
+    ];
 
 
     const onHandleInputChange = (field,value)=>{
@@ -52,6 +70,10 @@ const onGenerate = async ()=>{
         console.log(formData);
         const courseId = uuidv4();
         try{
+        if (!userDetail?.email) {
+            toast.error('Please sign in to generate a course');
+            return;
+        }
         if (!formData?.name?.trim()) {
             toast.error('Course name is required');
             return;
@@ -65,15 +87,21 @@ const onGenerate = async ()=>{
             return;
         }
         setLoading(true);
-        const result = await axios.post('/api/generate-course-layout',{
-            ...formData,
-            courseId: courseId
-        })
+        const result = await axios.post(
+            '/api/generate-course-layout',
+            {
+                ...formData,
+                courseId: courseId
+            },
+            {
+                headers: {
+                    'x-user-email': userDetail.email,
+                },
+            }
+        )
         console.log(result.data);
         if(result.data.resp=='limit exceed'){
-            toast.warning('Please subscribe to plan!')
-            setOpen(false);
-            router.push('/workspace/billing');
+            toast.warning('Course creation limit reached')
             setLoading(false);
             return;
         }
@@ -104,24 +132,36 @@ const onGenerate = async ()=>{
                         <div className='flex flex-col gap-3 mt-4'>
                             <div>
                                 <label> Course Name</label>
-                                <Input placeholder="Course Name" 
-                                onChange={(event)=>onHandleInputChange('name',event?.target.value)}/>
+                                <Input
+                                    placeholder="Course Name"
+                                    onChange={(event)=>onHandleInputChange('name',event?.target.value)}
+                                />
                             </div>
+
                             <div>
                                 <label> Course Description(Optional)</label>
-                                <Textarea placeholder="Course Description"
-                                onChange={(event)=>onHandleInputChange('description',event?.target.value)}/>
+                                <Textarea
+                                    placeholder="Course Description"
+                                    onChange={(event)=>onHandleInputChange('description',event?.target.value)}
+                                />
                             </div>
+
                             <div>
                                 <label> No. of Chapters</label>
-                                <Input placeholder="No. of Chapters" type='number' 
-                                onChange={(event)=>onHandleInputChange('noOfChapters',Number(event?.target.value || 1))}/>
+                                <Input
+                                    placeholder="No. of Chapters"
+                                    type='number'
+                                    onChange={(event)=>onHandleInputChange('noOfChapters',Number(event?.target.value || 1))}
+                                />
                             </div>
+
                             <div className='flex gap-3 item-center'>
                                 <label>Include Video</label>
-                                <Switch 
-                                onCheckedChange={()=>onHandleInputChange('includeVideo',!formData?.includeVideo)}/>
+                                <Switch
+                                    onCheckedChange={()=>onHandleInputChange('includeVideo',!formData?.includeVideo)}
+                                />
                             </div>
+
                             <div>
                                 <label>Difficulty Level</label>
                                 <Select onValueChange={(value)=>onHandleInputChange('level',value)}>
@@ -129,23 +169,33 @@ const onGenerate = async ()=>{
                                         <SelectValue placeholder="Difficulty Level" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="begineer">Beginner</SelectItem>
+                                        <SelectItem value="Beginner">Beginner</SelectItem>
                                         <SelectItem value="Moderate">Moderate</SelectItem>
-                                        <SelectItem value="Advance">Advance</SelectItem>
+                                        <SelectItem value="Advanced">Advanced</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
 
-                            </div>
                             <div>
-                                <label> Category </label>
-                                                                <Input
-                                                                    placeholder="Category (Separated by Comma)"
-                                                                    onChange={(event)=>onHandleInputChange('category',event?.target.value)}
-                                                                />
+                                <label>Category</label>
+                                <Select onValueChange={(value)=>onHandleInputChange('category',value)}>
+                                    <SelectTrigger className="w-[280px]">
+                                        <SelectValue placeholder="Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CATEGORY_OPTIONS.map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
+
                             <Button className={'w-full'} onClick={onGenerate} disabled={loading}>
-                                {loading?<Loader2Icon className='animate-spin'/> :
-                                <Sparkle/>}Generate Course</Button>
+                                {loading ? <Loader2Icon className='animate-spin'/> : <Sparkle/>}
+                                Generate Course
+                            </Button>
                         </div>
                     </DialogDescription>
                 </DialogHeader>

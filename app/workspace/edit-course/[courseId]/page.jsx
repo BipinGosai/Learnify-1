@@ -12,8 +12,8 @@ function EditCourse({viewCourse=false}) {
     const [course,setCourse]=useState();
 
     useEffect(()=>{
-        GetCourseInfo();
-    },[])
+    if (courseId) GetCourseInfo();
+  },[courseId])
 
     const GetCourseInfo = async()=>{
         setLoading(true);
@@ -24,7 +24,7 @@ function EditCourse({viewCourse=false}) {
     }
   return (
     <div>
-      <CourseInfo course={course} viewCourse={viewCourse}/>
+      <CourseInfo course={course} viewCourse={viewCourse} refreshCourse={GetCourseInfo} />
       <ChapterTopicList course={course}/>
     </div>
   )

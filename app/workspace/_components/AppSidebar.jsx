@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Book, Compass, LayoutDashboard, UserCircle2Icon,WalletCards } from 'lucide-react'
+import { Book, Compass, LayoutDashboard, UserCircle2Icon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -36,11 +36,6 @@ const SidebarOptions=[
     title:'Explore Courses',
     icon:Compass,
     path:'/workspace/explore'
-  },
-  {
-    title:'Billing',
-    icon:WalletCards,
-    path:'/workspace/billing'
   },
   {
     title:'Profile',

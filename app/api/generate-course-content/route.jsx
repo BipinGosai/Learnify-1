@@ -25,6 +25,17 @@ export async function POST(req) {
     if (!courseId) {
         return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
     }
+
+    // If a course is already sent for verification, regenerating content would invalidate the professor link.
+    // Block it to prevent the link from appearing to "expire" early.
+    const existingRows = await db.select().from(coursesTable).where(eq(coursesTable.cid, courseId));
+    const existingCourse = existingRows?.[0];
+    if (existingCourse?.reviewStatus === 'pending_verification') {
+        return NextResponse.json(
+            { error: 'Course is pending verification. Wait for professor review before regenerating content.' },
+            { status: 409 }
+        );
+    }
     if (!Array.isArray(chapters) || chapters.length === 0) {
         return NextResponse.json({ error: 'courseJson.chapters is required' }, { status: 400 });
     }
@@ -32,7 +43,7 @@ export async function POST(req) {
     const promises = chapters.map(async (chapter) => {
         try {
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
 
             const result = await model.generateContent(PROMPT + JSON.stringify(chapter));
             const response = await result.response;
@@ -73,7 +84,13 @@ export async function POST(req) {
 
     // Save to database
     const dbResp = await db.update(coursesTable).set({
-        courseContent: CourseContent
+        courseContent: CourseContent,
+        reviewStatus: 'draft',
+        reviewRequestedAt: null,
+        reviewTokenHash: null,
+        reviewProfessorEmail: null,
+        reviewFeedback: null,
+        reviewReviewedAt: null,
     }).where(eq(coursesTable.cid, courseId));
 
     return NextResponse.json({

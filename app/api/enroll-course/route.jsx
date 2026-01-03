@@ -1,18 +1,13 @@
 import { coursesTable, enrollCourseTable } from "@/config/schema";
-import { currentUser } from "@clerk/nextjs/server";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/config/db";
 import { NextResponse } from "next/server";
-
-function getUserEmailFromClerkUser(user) {
-  return user?.primaryEmailAddress?.emailAddress ?? null;
-}
+import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
 // Handle course enrollment
 export async function POST(req) {
   const { courseId } = await req.json();
-  const user = await currentUser();
-  const userEmail = getUserEmailFromClerkUser(user);
+  const userEmail = await getUserEmailFromRequestAsync(req);
 
   if (!userEmail) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,8 +45,7 @@ export async function POST(req) {
 
 // Fetch enrolled courses
 export async function GET(req) {
-  const user = await currentUser();
-  const userEmail = getUserEmailFromClerkUser(user);
+  const userEmail = await getUserEmailFromRequestAsync(req);
   const { searchParams } = new URL(req.url);
   const courseId = searchParams?.get("courseId");
 
@@ -72,7 +66,22 @@ export async function GET(req) {
       )
       .orderBy(desc(enrollCourseTable.id));
 
-    return NextResponse.json(result[0]);
+    const row = result?.[0];
+    if (!row) {
+      return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+    }
+
+    const course = row?.courses;
+    const reviewStatus = course?.reviewStatus ?? "draft";
+
+    if (reviewStatus !== "verified") {
+      return NextResponse.json(
+        { error: "Course content is pending verification", reviewStatus },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(row);
   }
 
   const result = await db
@@ -87,8 +96,7 @@ export async function GET(req) {
 
 export  async function PUT(req) {
   const {completedChapter,courseId}=await req.json();
-  const user=await currentUser();
-  const userEmail = getUserEmailFromClerkUser(user);
+  const userEmail = await getUserEmailFromRequestAsync(req);
 
   if (!userEmail) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

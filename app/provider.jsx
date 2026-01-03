@@ -1,32 +1,22 @@
 "use client"
 import { SelectedChapterIndexContext } from '@/context/SelectedChapterIndexContext';
 import { UserDetailContext } from '@/context/UserDetailContext';
-import {useUser} from '@clerk/nextjs'
 import axios from "axios";
 import React,{useEffect, useState} from "react";
 
 function Provider ({children}) {
-
-    const {user}=useUser();
     const [userDetail,setUserDetail]=useState();
     const [selectedChapterIndex,setSelectedChapterIndex]=useState(0);
 
     useEffect(()=>{
-        const email = user?.primaryEmailAddress?.emailAddress;
-        if (email) {
-            CreateNewUser();
-        }
-    }, [user])
-    const CreateNewUser=async()=>{
+        LoadMe();
+    }, [])
+
+    const LoadMe = async ()=>{
         try {
-            const result=await axios.post('/api/user',{
-                name:user?.fullName,
-                email:user?.primaryEmailAddress?.emailAddress
-            });
-            console.log(result.data);
-            setUserDetail(result.data);
+            const resp = await axios.get('/api/auth/me');
+            setUserDetail(resp.data?.user);
         } catch (err) {
-            // keep app usable if the API fails
             setUserDetail(undefined);
         }
     }

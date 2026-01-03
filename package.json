@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "db:push": "drizzle-kit push",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.1",
-    "@clerk/nextjs": "^6.36.5",
     "@google/genai": "^1.34.0",
     "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.2",
@@ -24,12 +24,14 @@
     "@types/pg": "^8.16.0",
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.562.0",
     "mime": "^4.1.0",
     "next": "16.1.0",
+    "nodemailer": "^6.9.15",
     "openai": "^6.15.0",
     "pg": "^8.16.3",
     "react": "19.2.3",

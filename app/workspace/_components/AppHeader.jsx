@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/nextjs'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -16,7 +15,11 @@ function AppHeader({ hideSidebar = false, hideUserButton = false, showDashboardL
         )}
       </div>
 
-      {!hideUserButton && <UserButton />}
+      {!hideUserButton && (
+        <Button asChild variant='outline' size='sm'>
+          <Link href='/sign-out'>Sign Out</Link>
+        </Button>
+      )}
     </div>
   )
 }

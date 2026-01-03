@@ -2,6 +2,7 @@ import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
 export async function POST(req){
     try {
@@ -50,6 +51,48 @@ export async function POST(req){
         }
     } catch (error) {
         console.error('/api/user POST failed:', error);
+        return NextResponse.json(
+            { error: 'Internal Server Error', message: error?.message },
+            { status: 500 }
+        );
+    }
+}
+
+export async function PATCH(req) {
+    try {
+        const email = await getUserEmailFromRequestAsync(req);
+        if (!email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await req.json().catch(() => ({}));
+        const nameFromBody = body?.name;
+        const name = (typeof nameFromBody === 'string') ? nameFromBody.trim() : '';
+        if (!name) {
+            return NextResponse.json({ error: 'name is required' }, { status: 400 });
+        }
+        if (name.length > 255) {
+            return NextResponse.json({ error: 'name is too long' }, { status: 400 });
+        }
+
+        const updated = await db
+            .update(usersTable)
+            .set({ name })
+            .where(eq(usersTable.email, email))
+            .returning();
+
+        const user = updated?.[0];
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+        });
+    } catch (error) {
+        console.error('/api/user PATCH failed:', error);
         return NextResponse.json(
             { error: 'Internal Server Error', message: error?.message },
             { status: 500 }

@@ -13,6 +13,7 @@ function Course() {
   const { courseId } = useParams();
   const [courseInfo, setCourseInfo] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     if (courseId) {
@@ -21,11 +22,21 @@ function Course() {
   }, [courseId]);
 
   const GetEnrolledCourseById = async () => {
-    const result = await axios.get(
-      "/api/enroll-course?courseId=" + courseId
-    );
-    console.log("API RESULT ", result.data);
-    setCourseInfo(result.data);
+    setLoadError(null);
+    try {
+      const result = await axios.get("/api/enroll-course?courseId=" + courseId);
+      console.log("API RESULT ", result.data);
+      setCourseInfo(result.data);
+    } catch (e) {
+      const status = e?.response?.status;
+      const message = e?.response?.data?.error;
+      setCourseInfo(null);
+      setLoadError({
+        status,
+        message: typeof message === "string" ? message : "Failed to load course",
+        reviewStatus: e?.response?.data?.reviewStatus,
+      });
+    }
   };
 
   return (
@@ -38,16 +49,34 @@ function Course() {
             variant="outline"
             size="sm"
             onClick={() => setIsSidebarOpen((v) => !v)}
+            disabled={!!loadError}
           >
             {isSidebarOpen ? <ChevronLeft /> : <ChevronRight />}
             {isSidebarOpen ? "Hide Chapters" : "Show Chapters"}
           </Button>
         </div>
 
-        <div className="flex w-full flex-col md:flex-row gap-4 md:gap-6 items-start">
-          {isSidebarOpen && <ChapterListSidebar courseInfo={courseInfo} />}
-          <ChapterContent courseInfo={courseInfo} refreshData={GetEnrolledCourseById} />
-        </div>
+        {loadError ? (
+          <div className="p-6 bg-background rounded-xl border border-border">
+            <div className="font-semibold">{loadError.message}</div>
+            {loadError.status === 403 ? (
+              <div className="text-sm text-muted-foreground mt-2">
+                This course is not readable until it is verified by a professor.
+                {loadError.reviewStatus ? ` Current status: ${loadError.reviewStatus}.` : null}
+              </div>
+            ) : null}
+            {loadError.status === 401 ? (
+              <div className="text-sm text-muted-foreground mt-2">
+                Please sign in to continue.
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex w-full flex-col md:flex-row gap-4 md:gap-6 items-start">
+            {isSidebarOpen && <ChapterListSidebar courseInfo={courseInfo} />}
+            <ChapterContent courseInfo={courseInfo} refreshData={GetEnrolledCourseById} />
+          </div>
+        )}
       </div>
     </div>
   );

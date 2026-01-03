@@ -1,7 +1,6 @@
 "use client"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useUser } from '@clerk/nextjs';
 import axios from 'axios';
 import { Loader2, Search } from 'lucide-react'
 import React, { useState , useEffect } from 'react'
@@ -13,7 +12,6 @@ function Explore() {
     const [courseList, setCourseList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { user } = useUser();
     const GetCourseList = async () => {
         try {
             setLoading(true);
@@ -28,10 +26,8 @@ function Explore() {
         }
     };
     useEffect(() => {
-        if (user) {
-            GetCourseList();
-        }
-    }, [user]);
+        GetCourseList();
+    }, []);
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">

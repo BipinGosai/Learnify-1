@@ -1,18 +1,18 @@
 "use client"
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import AddNewCourseDialog from './AddNewCourseDialog';
-import {useUser} from '@clerk/nextjs';
 import axios from 'axios';
 import CourseCard from './CourseCard';
 import { Loader2 } from 'lucide-react';
+import { UserDetailContext } from '@/context/UserDetailContext';
 
 function CourseList() {
     const [courseList, setCourseList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { user } = useUser();
+    const { userDetail } = useContext(UserDetailContext);
     const GetCourseList = async () => {
         try {
             setLoading(true);
@@ -27,10 +27,12 @@ function CourseList() {
         }
     };
     useEffect(() => {
-        if (user) {
+        if (userDetail?.email) {
             GetCourseList();
+        } else {
+            setLoading(false);
         }
-    }, [user]);
+    }, [userDetail?.email]);
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -44,6 +46,21 @@ function CourseList() {
             <div className="text-center py-10">
                 <p className="text-red-500 mb-4">{error}</p>
                 <Button onClick={GetCourseList}>Try Again</Button>
+            </div>
+        );
+    }
+    if (!userDetail?.email) {
+        return (
+            <div className='mt-10'>
+                <h2 className='font-bold text-2xl'>Course List</h2>
+                <div className='mt-4 border border-border rounded-2xl p-6 bg-secondary'>
+                    <p className='text-muted-foreground'>Please sign in to view your courses.</p>
+                    <div className='mt-4'>
+                        <Button asChild>
+                            <a href='/sign-in'>Go to Sign In</a>
+                        </Button>
+                    </div>
+                </div>
             </div>
         );
     }
