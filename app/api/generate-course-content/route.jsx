@@ -1,5 +1,5 @@
 import { db } from '@/config/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, ilike, sql } from 'drizzle-orm';
 import axios from 'axios';
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -36,24 +36,59 @@ export async function POST(req) {
             { status: 409 }
         );
     }
+
+    // Check for duplicate course with same name and category
+    const courseName = (courseTitle || existingCourse?.name || '').trim();
+    const courseCategory = (courseJson?.course?.category || existingCourse?.category || '').trim();
+    if (courseName && courseCategory) {
+        const duplicates = await db
+            .select()
+            .from(coursesTable)
+            .where(
+                and(
+                    ilike(coursesTable.name, courseName),
+                    ilike(coursesTable.category, courseCategory),
+                    sql`${coursesTable.courseContent}::jsonb != '{}'::jsonb`,
+                    // Exclude the current course
+                    sql`${coursesTable.cid} != ${courseId}`
+                )
+            )
+            .limit(1);
+
+        if (duplicates?.[0]) {
+            return NextResponse.json(
+                {
+                    error: 'This course already exists',
+                    duplicateCid: duplicates[0].cid,
+                },
+                { status: 409 }
+            );
+        }
+    }
+
     if (!Array.isArray(chapters) || chapters.length === 0) {
         return NextResponse.json({ error: 'courseJson.chapters is required' }, { status: 400 });
     }
 
     const promises = chapters.map(async (chapter) => {
         try {
+            console.log('Generating content for chapter:', chapter?.chapterName);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
             const result = await model.generateContent(PROMPT + JSON.stringify(chapter));
             const response = await result.response;
             const text = response.text();
 
+            console.log('Raw Gemini response for', chapter?.chapterName, ':', text.substring(0, 200));
+
             const rawJson = text.replace(/```json/i, '').replace(/```/g, '').trim();
             let JSONResp;
             try {
                 JSONResp = JSON.parse(rawJson);
+                console.log('Parsed JSON for chapter', chapter?.chapterName, 'topics:', JSONResp.topics?.length || 0);
             } catch (e) {
+                console.error('Failed to parse Gemini response as JSON:', e);
                 JSONResp = {
                     chapterName: chapter?.chapterName ?? 'Untitled',
                     topics: [],
@@ -68,7 +103,7 @@ export async function POST(req) {
                 courseData: JSONResp,
             };
         } catch (error) {
-            console.error('Error generating chapter content:', error);
+            console.error('Error generating chapter content for', chapter?.chapterName, ':', error);
             return {
                 youtubeVideo: [],
                 courseData: {
@@ -82,6 +117,8 @@ export async function POST(req) {
 
     const CourseContent = await Promise.all(promises);
 
+    console.log('Generated CourseContent:', JSON.stringify(CourseContent, null, 2));
+
     // Save to database
     const dbResp = await db.update(coursesTable).set({
         courseContent: CourseContent,
@@ -93,9 +130,12 @@ export async function POST(req) {
         reviewReviewedAt: null,
     }).where(eq(coursesTable.cid, courseId));
 
+    console.log('DB Update Response:', dbResp);
+
     return NextResponse.json({
         courseName: courseTitle,
-        CourseContent: CourseContent
+        CourseContent: CourseContent,
+        dbUpdateCount: dbResp.rowCount
     });
 }
 
@@ -103,6 +143,12 @@ export async function POST(req) {
 const GetYoutubeVideo = async (topic) => {
     try {
         const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
+        
+        if (!process.env.YOUTUBE_API_KEY) {
+            console.warn('YOUTUBE_API_KEY not configured');
+            return [];
+        }
+        
         const params = {
             part: 'snippet',
             q: `${topic} tutorial`,
@@ -110,14 +156,19 @@ const GetYoutubeVideo = async (topic) => {
             type: 'video',
             key: process.env.YOUTUBE_API_KEY
         };
+        
+        console.log('Fetching YouTube videos for topic:', topic);
         const resp = await axios.get(YOUTUBE_BASE_URL, { params });
-        return resp.data.items.map(item => ({
+        const videos = resp.data.items?.map(item => ({
             videoId: item.id?.videoId,
             title: item.snippet?.title,
             thumbnail: item.snippet?.thumbnails?.medium?.url
-        }));
+        })) || [];
+        
+        console.log(`Found ${videos.length} videos for topic: ${topic}`);
+        return videos;
     } catch (error) {
-        console.error('Error fetching YouTube videos:', error);
+        console.error('Error fetching YouTube videos for topic', topic, ':', error.message);
         return []; // Return empty array instead of failing the whole request
     }
 };

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or, ilike } from 'drizzle-orm';
 
 import { db } from '@/config/db';
-import { coursesTable } from '@/config/schema';
+import { coursesTable, professorsTable } from '@/config/schema';
 import { getUserEmailFromRequestAsync } from '@/lib/authServer';
 import { getAppBaseUrl, getProfessorEmail, sendProfessorVerificationEmail } from '@/lib/mail';
 
@@ -19,12 +19,59 @@ function isCourseContentGenerated(course) {
   return false;
 }
 
-function isValidEmail(email) {
-  if (typeof email !== 'string') return false;
-  const v = email.trim();
-  if (!v) return false;
-  // Simple sanity check; not a full RFC validator.
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+function normalize(str = '') {
+  return typeof str === 'string' ? str.toLowerCase().trim() : '';
+}
+
+function scoreProfessorForCourse(prof, courseName, courseCategory) {
+  const spec = prof?.specializations;
+  const specialization = Array.isArray(spec) 
+    ? spec.join(', ').toLowerCase().trim()
+    : normalize(spec);
+  
+  if (!specialization) return 0;
+
+  let score = 0;
+
+  // Course name word matching (primary matching)
+  const courseNameWords = courseName.split(/\s+/);
+  for (const word of courseNameWords) {
+    if (word.length > 3 && specialization.includes(word)) {
+      score += 10;  // Higher priority for course name matching
+    }
+  }
+
+  // Category match (secondary)
+  if (courseCategory && specialization.includes(courseCategory)) {
+    score += 5;
+  }
+
+  // Partial category word match
+  const categoryWords = courseCategory.split(/[&,\s]+/);
+  for (const word of categoryWords) {
+    if (word.length > 3 && specialization.includes(word)) score += 2;
+  }
+
+  return score;
+}
+
+function pickBestProfessor(course, professors) {
+  const courseCategory = normalize(course?.category || course?.courseJson?.course?.category);
+  const courseName = normalize(course?.name || course?.courseJson?.course?.name);
+  if (!Array.isArray(professors) || professors.length === 0) return null;
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const prof of professors) {
+    const score = scoreProfessorForCourse(prof, courseName, courseCategory);
+    if (score > bestScore) {
+      bestScore = score;
+      best = prof;
+    }
+  }
+
+  return bestScore > 0 ? best : null;
 }
 
 export async function POST(req) {
@@ -36,21 +83,10 @@ export async function POST(req) {
 
     const body = await req.json().catch(() => ({}));
     const courseId = typeof body?.courseId === 'string' ? body.courseId.trim() : '';
+    const professorEmailInput = typeof body?.professorEmail === 'string' ? body.professorEmail.trim() : '';
+
     if (!courseId) {
       return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
-    }
-
-    const ALLOWED_PROFESSOR_EMAILS = ['bpin.gosai321@gmail.com'];
-    const requestedProfessorEmailRaw = typeof body?.professorEmail === 'string' ? body.professorEmail.trim() : '';
-    const professorEmail = requestedProfessorEmailRaw || ALLOWED_PROFESSOR_EMAILS[0];
-    if (requestedProfessorEmailRaw && !isValidEmail(requestedProfessorEmailRaw)) {
-      return NextResponse.json({ error: 'Invalid professor email' }, { status: 400 });
-    }
-    if (!professorEmail) {
-      return NextResponse.json({ error: 'professorEmail is required' }, { status: 400 });
-    }
-    if (!ALLOWED_PROFESSOR_EMAILS.includes(professorEmail)) {
-      return NextResponse.json({ error: 'Selected professor is not allowed' }, { status: 400 });
     }
 
     const courses = await db
@@ -71,6 +107,39 @@ export async function POST(req) {
     if (currentStatus === 'pending_verification') {
       return NextResponse.json({ ok: true, status: 'pending_verification' });
     }
+
+    // Fetch all professors for matching/validation
+    const allProfessors = await db.select().from(professorsTable);
+    if (!allProfessors.length) {
+      return NextResponse.json({ error: 'No professor available for this course category' }, { status: 400 });
+    }
+
+    const courseCategory = normalize(course?.category || course?.courseJson?.course?.category);
+    const courseName = normalize(course?.name || course?.courseJson?.course?.name);
+
+    let assignedProfessor = null;
+
+    if (professorEmailInput) {
+      const candidate = allProfessors.find((p) => normalize(p.email) === normalize(professorEmailInput));
+      if (!candidate) {
+        return NextResponse.json({ error: 'Selected professor is not allowed' }, { status: 400 });
+      }
+
+      const score = scoreProfessorForCourse(candidate, courseName, courseCategory);
+      if (score <= 0) {
+        return NextResponse.json({ error: 'Selected professor is not allowed for this course' }, { status: 400 });
+      }
+
+      assignedProfessor = candidate;
+    } else {
+      const best = pickBestProfessor(course, allProfessors);
+      if (!best) {
+        return NextResponse.json({ error: 'No professor available for this course category' }, { status: 400 });
+      }
+      assignedProfessor = best;
+    }
+
+    const professorEmail = assignedProfessor.email;
 
     const rawToken = crypto.randomBytes(24).toString('hex');
     const tokenHash = sha256Hex(rawToken);
@@ -101,11 +170,14 @@ export async function POST(req) {
     return NextResponse.json({
       ok: true,
       status: 'pending_verification',
+      professorEmail,
+      professorName: assignedProfessor?.name || 'Professor',
       emailSent: emailResult.ok,
       emailReason: emailResult.ok ? undefined : emailResult.reason,
       emailMissing: emailResult.ok ? undefined : emailResult.missing,
       emailMessage: emailResult.ok ? undefined : emailResult.message,
       verificationLink: emailResult.ok ? undefined : verificationLink,
+      message: `Verification submitted to ${assignedProfessor?.name || 'the assigned professor'}`
     });
   } catch (e) {
     console.error('/api/courses/submit-verification error:', e);

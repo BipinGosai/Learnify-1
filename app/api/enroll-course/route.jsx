@@ -81,7 +81,23 @@ export async function GET(req) {
       );
     }
 
-    return NextResponse.json(row);
+    // Ensure courseContent is properly parsed as array
+    const courseContent = course?.courseContent;
+    let parsedCourseContent = courseContent;
+    
+    if (courseContent && typeof courseContent === 'string') {
+      try {
+        parsedCourseContent = JSON.parse(courseContent);
+      } catch (e) {
+        console.error('Error parsing courseContent from DB:', e);
+        parsedCourseContent = [];
+      }
+    }
+
+    return NextResponse.json({
+      courses: { ...course, courseContent: parsedCourseContent },
+      enrollCourse: row?.enrollCourse
+    });
   }
 
   const result = await db

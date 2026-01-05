@@ -1,10 +1,18 @@
 import { coursesTable } from '@/config/schema'; 
 import { db } from '@/config/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, ilike, sql } from 'drizzle-orm';
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { getUserEmailFromRequestAsync } from '@/lib/authServer';
+
+const toSlug = (value = '') =>
+  value
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+    .slice(0, 120);
 
 const PROMPT = `Generate Learning Course depends on following details. In which Make sure to add Course Name Description, Chapter Name+ Image Prompt (Create a modern, flat-style 2D digital illustration representing user Topic. Include UI/UX elements such as mockup screens, text blocks, icons, buttons, and creative workspace tools. Add symbolic elements related to user Course, like sticky notes, design components, and visual aids. Use a vibrant color palette (blues, purples, oranges) with a clean, professional look. The illustration should feel creative, tech-savvy, and educational, ideal for visualizing concepts in user Course) for Course Banner in 3d format, Topic under each chapters , Duration for each chapters etc, in JSON format only.
 Schema:{
@@ -37,13 +45,40 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Prevent duplicate generation when a course with same name & category already exists in explore
+    const courseName = (formData?.name || '').trim();
+    const courseCategory = (formData?.category || '').trim();
+    if (courseName && courseCategory) {
+      const duplicates = await db
+        .select()
+        .from(coursesTable)
+        .where(
+          and(
+            ilike(coursesTable.name, courseName),
+            ilike(coursesTable.category, courseCategory),
+            sql`${coursesTable.courseContent}::jsonb != '{}'::jsonb`
+          )
+        )
+        .limit(1);
+
+      if (duplicates?.[0]) {
+        return NextResponse.json(
+          {
+            error: 'Already have the same course',
+            duplicateCid: duplicates[0].cid,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // Google AI content generation
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const config = {
       thinkingConfig: { thinkingBudget: -1 },
       imageConfig: { imageSize: '1K' },
     };
-    const model = 'gemini-3-flash';
+    const model = 'gemini-2.5-flash';
     const contents = [
       { role: 'user', parts: [{ text: PROMPT + JSON.stringify(formData) }] },
     ];
@@ -75,12 +110,17 @@ export async function POST(req) {
 
     const bannerImageUrl = await GenerateImage(bannerPrompt);
 
+    const domainSource =
+      formData.courseDomain || JSONResp.course?.name || formData.name || courseId;
+    const courseDomain = toSlug(domainSource) || courseId;
+
     // Save course to database
     await db.insert(coursesTable).values({
       ...formData,
       courseJson: JSONResp,
       userEmail,
       cid: courseId,
+      courseDomain,
       noOfChapters: JSONResp.course.noOfChapters || 1,
       bannerImageUrl,
     });

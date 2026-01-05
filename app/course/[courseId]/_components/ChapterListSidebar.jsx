@@ -16,7 +16,14 @@ function ChapterListSidebar({ courseInfo }) {
   const { selectedChapterIndex, setSelectedChapterIndex } = useContext(SelectedChapterIndexContext)
   let completedChapter= enrollCourse?.completedChapters ?? [];
 
-  if (!courseContent || courseContent.length === 0) {
+  // Parse courseContent if it's a string
+  const parsedCourseContent = Array.isArray(courseContent) 
+    ? courseContent 
+    : (typeof courseContent === 'string' 
+      ? (() => { try { return JSON.parse(courseContent); } catch { return []; } })() 
+      : []);
+
+  if (!parsedCourseContent || parsedCourseContent.length === 0) {
     return (
       <aside className="w-full md:w-80 flex-none bg-secondary h-auto md:h-[calc(100svh-10rem)] p-4 rounded-xl border border-border overflow-auto">
         <h2 className="text-lg font-bold">Chapters</h2>
@@ -30,11 +37,11 @@ function ChapterListSidebar({ courseInfo }) {
     <aside className="w-full md:w-80 flex-none bg-secondary h-auto md:h-[calc(100svh-10rem)] p-4 rounded-xl border border-border overflow-auto overflow-x-hidden">
       <div className="mb-4">
         <h2 className="text-lg font-bold">Chapters</h2>
-        <p className="text-xs text-muted-foreground">{courseContent?.length} total</p>
+        <p className="text-xs text-muted-foreground">{parsedCourseContent?.length} total</p>
       </div>
 
       <Accordion type="single" collapsible >
-        {courseContent?.map((chapter, index) => (
+        {parsedCourseContent?.map((chapter, index) => (
           <AccordionItem key={chapter?.cid ?? index} value={String(index)}>
             <AccordionTrigger
               onClick={() => setSelectedChapterIndex(index)}

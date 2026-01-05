@@ -117,6 +117,26 @@ const onGenerate = async ()=>{
         router.push('/workspace/edit-course/'+nextCourseId);
 
     }catch(e){
+        const status = e?.response?.status;
+        const dupCid = e?.response?.data?.duplicateCid;
+        if (status === 409 && dupCid) {
+            setLoading(false);
+            toast.message('This course already exists!', {
+                description: 'Redirecting to existing course',
+                action: {
+                    label: 'View',
+                    onClick: () => router.push('/course/' + dupCid),
+                },
+                duration: 5000,
+            });
+            setOpen(false);
+            // Redirect to the existing course in explore section
+            setTimeout(() => {
+                router.push('/course/' + dupCid);
+            }, 1000);
+            return;
+        }
+        toast.error('Failed to create course. Please try again.');
         setLoading(false);
         console.log(e);
     }

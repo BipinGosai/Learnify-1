@@ -36,13 +36,18 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         let alive = true;
         (async () => {
             try {
-                const resp = await axios.get('/api/professors');
+                const params = new URLSearchParams();
+                if (course?.category) params.append('courseCategory', course.category);
+                if (course?.name) params.append('courseName', course.name);
+                
+                const resp = await axios.get(`/api/professors${params.toString() ? '?' + params.toString() : ''}`);
                 if (!alive) return;
                 const list = Array.isArray(resp.data?.professors) ? resp.data.professors : [];
                 setProfessorList(list);
                 setProfessorListError(null);
                 if (!professorEmail && list.length > 0) {
-                    setProfessorEmail(list[0]);
+                    const suggested = suggestProfessor(course, list);
+                    setProfessorEmail(suggested?.email || list[0]?.email || '');
                 }
             } catch (e) {
                 if (!alive) return;
@@ -54,7 +59,18 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
             alive = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [course?.category, course?.name]);
+
+    // Re-evaluate suggested professor when course data or list loads
+    useEffect(() => {
+        if (!course || professorList.length === 0) return;
+        const current = professorList.find((p) => p.email === professorEmail);
+        if (current) return; // keep user's choice if valid
+        const suggested = suggestProfessor(course, professorList);
+        if (suggested?.email) {
+            setProfessorEmail(suggested.email);
+        }
+    }, [course, professorList, professorEmail]);
 
     if (!course || !isMounted) {
         return <div className='p-5 rounded-xl shadow'>Loading course information...</div>;
@@ -84,6 +100,88 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
 
     const reviewStatus = course?.reviewStatus ?? 'draft';
 
+    const normalize = (str = '') => (typeof str === 'string' ? str.toLowerCase().trim() : '');
+    const scoreProfessor = (prof) => {
+        const spec = prof?.specializations;
+        const specialization = Array.isArray(spec) 
+            ? spec.join(', ').toLowerCase().trim()
+            : normalize(spec);
+        
+        if (!specialization) return 0;
+        const courseCategory = normalize(course?.category || courseJson?.course?.category);
+        const courseName = normalize(course?.name || courseJson?.course?.name);
+        let score = 0;
+        
+        // Course name word matching (primary)
+        courseName.split(/\s+/).forEach((w) => {
+            if (w.length > 3 && specialization.includes(w)) score += 10;
+        });
+        
+        // Category match (secondary)
+        if (courseCategory && specialization.includes(courseCategory)) score += 5;
+        
+        // Partial category words
+        courseCategory.split(/[&,\s]+/).forEach((w) => {
+            if (w.length > 3 && specialization.includes(w)) score += 2;
+        });
+        
+        return score;
+    };
+
+    const suggestProfessor = (courseData, list) => {
+        if (!Array.isArray(list) || list.length === 0) return null;
+        let best = null;
+        let bestScore = 0;
+        for (const prof of list) {
+            const s = scoreProfessor(prof);
+            if (s > bestScore) {
+                bestScore = s;
+                best = prof;
+            }
+        }
+        return bestScore > 0 ? best : list[0];
+    };
+
+    const getProfessorSpecializationArray = (prof) => {
+        const specialization = prof?.specializations;
+        if (!specialization) return [];
+        
+        // If already an array, return it cleaned
+        if (Array.isArray(specialization)) {
+            return specialization.map(s => String(s).trim()).filter(s => s.length > 0);
+        }
+        
+        // If string, split it
+        if (typeof specialization === 'string') {
+            return specialization.split(/[,&]/).map(s => s.trim()).filter(s => s.length > 0);
+        }
+        
+        return [];
+    };
+
+    const getMatchingSpecialization = (prof) => {
+        const specialization = getProfessorSpecializationArray(prof);
+        const courseCategory = normalize(course?.category || courseJson?.course?.category);
+        const courseName = normalize(course?.name || courseJson?.course?.name);
+        const courseWords = courseName.split(/\s+/).filter(w => w.length > 3);
+        const categoryWords = courseCategory.split(/[&,\s]+/).filter(w => w.length > 3);
+        
+        const matches = [];
+        specialization.forEach(spec => {
+            const specNorm = normalize(spec);
+            if (courseCategory && specNorm === courseCategory) {
+                matches.push(spec);
+            }
+            if (categoryWords.some(w => specNorm.includes(w) || w.includes(specNorm))) {
+                if (!matches.includes(spec)) matches.push(spec);
+            }
+            if (courseWords.some(w => specNorm.includes(w) || w.includes(specNorm))) {
+                if (!matches.includes(spec)) matches.push(spec);
+            }
+        });
+        return matches;
+    };
+
     const enrollAndContinue = async () => {
         if (!course?.cid) return;
         setEnrolling(true);
@@ -109,6 +207,30 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         if (!email) {
             toast.error('Please enter professor email');
             return;
+        }
+
+        // Check if course name matches with professor specialization
+        if (professorList.length > 0) {
+            const prof = professorList.find((p) => p.email === email);
+            if (!prof) {
+                toast.error('This professor cannot verify');
+                return;
+            }
+            
+            const courseName = normalize(course?.name || courseJson?.course?.name);
+            const spec = prof?.specializations;
+            const specialization = Array.isArray(spec) 
+                ? spec.join(', ').toLowerCase().trim()
+                : normalize(spec);
+            
+            // Check if any word from course name matches with professor specialization
+            const courseWords = courseName.split(/\s+/).filter(w => w.length > 2);
+            const hasMatch = courseWords.some(word => specialization.includes(word));
+            
+            if (!hasMatch) {
+                toast.error('This professor cannot verify');
+                return;
+            }
         }
 
         // Show the user immediate UI feedback instead of keeping the button spinning.
@@ -140,6 +262,25 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         }
     };
 
+    const CancelVerification = async () => {
+        if (!isMounted || !course?.cid) return;
+
+        setVerificationSubmitting(true);
+        try {
+            await axios.post('/api/courses/cancel-verification', {
+                courseId: course.cid,
+            });
+            toast.success('Verification cancelled successfully');
+            await refreshCourse?.();
+            setVerificationNoticeVisible(false);
+        } catch (e) {
+            console.error('Error cancelling verification:', e);
+            toast.error('Failed to cancel verification');
+        } finally {
+            setVerificationSubmitting(false);
+        }
+    };
+
 const GenerateCourseContent = async () => {
     if (!isMounted) return;
     
@@ -155,6 +296,18 @@ const GenerateCourseContent = async () => {
         await refreshCourse?.();
         setVerificationNoticeVisible(false);
     } catch (e) {
+        const status = e?.response?.status;
+        const dupCid = e?.response?.data?.duplicateCid;
+        if (status === 409 && dupCid) {
+            toast.message('This course already exists!', {
+                description: 'Click to view the existing course',
+                action: {
+                    label: 'View Course',
+                    onClick: () => router.push('/course/' + dupCid),
+                },
+            });
+            return;
+        }
         console.error('Error generating content:', e);
         toast.error('Server Side error, Try Again!');
     } finally {
@@ -238,6 +391,22 @@ const GenerateCourseContent = async () => {
                                                     Go to dashboard
                                                 </Button>
                                             </Link>
+                                            <Button 
+                                                type='button' 
+                                                variant='destructive' 
+                                                size='sm'
+                                                onClick={CancelVerification}
+                                                disabled={verificationSubmitting}
+                                            >
+                                                {verificationSubmitting ? (
+                                                    <>
+                                                        <Loader2 className='w-3 h-3 animate-spin mr-1' />
+                                                        Cancelling...
+                                                    </>
+                                                ) : (
+                                                    'Cancel Verification'
+                                                )}
+                                            </Button>
                                         </div>
                                     </div>
                                 ) : (
@@ -267,18 +436,43 @@ const GenerateCourseContent = async () => {
                                             <>
                                                 <div className='flex flex-col gap-2'>
                                                     {professorList.length > 0 ? (
-                                                        <Select value={professorEmail} onValueChange={setProfessorEmail} disabled={loading}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder='Choose professor email' />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {professorList.map((email) => (
-                                                                    <SelectItem key={email} value={email}>
-                                                                        {email}
-                                                                    </SelectItem>
-                                                                ))}
+                                                        <>
+                                                            <div className='text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1'>
+                                                                Select Professor for Verification
+                                                            </div>
+                                                            <Select value={professorEmail} onValueChange={setProfessorEmail} disabled={loading}>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder='Choose professor' />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {professorList.map((prof) => {
+                                                                        return (
+                                                                            <SelectItem key={prof.email} value={prof.email}>
+                                                                                {prof.email}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
                                                             </SelectContent>
                                                         </Select>
+                                                        {professorEmail && professorList.find(p => p.email === professorEmail) && (
+                                                            <div className='text-xs border border-border rounded-lg p-2 bg-blue-50 dark:bg-blue-950'>
+                                                                <div className='font-medium text-blue-900 dark:text-blue-100'>
+                                                                    ✓ Recommended Professor
+                                                                </div>
+                                                                <div className='text-blue-800 dark:text-blue-200 mt-1'>
+                                                                    <div className='font-semibold'>{professorList.find(p => p.email === professorEmail)?.name || 'Professor'}</div>
+                                                                    <div className='mt-1'>
+                                                                        <strong>Specialization:</strong> {(professorList.find(p => p.email === professorEmail)?.specializationArray || getProfessorSpecializationArray(professorList.find(p => p.email === professorEmail))).join(', ') || 'Not specified'}
+                                                                    </div>
+                                                                    {getMatchingSpecialization(professorList.find(p => p.email === professorEmail)).length > 0 && (
+                                                                        <div className='mt-1'>
+                                                                            <strong>Matches your course:</strong> {getMatchingSpecialization(professorList.find(p => p.email === professorEmail)).join(', ')}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        </>
                                                     ) : (
                                                         <>
                                                             <Input

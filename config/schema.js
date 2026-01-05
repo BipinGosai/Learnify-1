@@ -20,6 +20,7 @@ export const authSessionsTable = pgTable("auth_sessions", {
 export const coursesTable = pgTable("courses",{
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
   cid:varchar().notNull().unique(),
+    courseDomain:varchar('courseDomain').notNull(),
     name:varchar(),
     description:varchar(),
     noOfChapters:integer().notNull(),
@@ -39,6 +40,14 @@ export const coursesTable = pgTable("courses",{
     reviewFeedback: varchar('reviewFeedback', { length: 4000 }),
     reviewReviewedAt: timestamp('reviewReviewedAt', { withTimezone: true }),
 })
+
+export const professorsTable = pgTable('professors', {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  email: varchar({ length: 255 }).notNull().unique(),
+  name: varchar({ length: 255 }),
+  specializations: varchar({ length: 500 }), // Comma-separated course names/categories
+  createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const enrollCourseTable=pgTable('enrollCourse',{
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

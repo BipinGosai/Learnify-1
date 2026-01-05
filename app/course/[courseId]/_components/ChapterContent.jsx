@@ -12,12 +12,42 @@ function ChapterContent({ courseInfo, refreshData }) {
     const courseContent = courseInfo?.courses?.courseContent;
     const enrollCourse = courseInfo?.enrollCourse;
 
+    // Debug logging
+    useEffect(() => {
+        console.log('ChapterContent - courseInfo:', courseInfo);
+        console.log('ChapterContent - courseContent:', courseContent);
+    }, [courseInfo, courseContent]);
+
     const { selectedChapterIndex, setSelectedChapterIndex } = useContext(SelectedChapterIndexContext);
     const [loading, setLoading] = useState(false);
     const [showVideos, setShowVideos] = useState(true);
 
-    const videoData = courseContent?.[selectedChapterIndex]?.youtubeVideo;
-    const topics = courseContent?.[selectedChapterIndex]?.courseData?.topics;
+    // Parse courseContent if it's a string
+    const parsedCourseContent = useMemo(() => {
+        if (!courseContent) {
+            console.log('No courseContent');
+            return [];
+        }
+        if (Array.isArray(courseContent)) {
+            console.log('courseContent is array, length:', courseContent.length);
+            return courseContent;
+        }
+        if (typeof courseContent === 'string') {
+            try {
+                const parsed = JSON.parse(courseContent);
+                console.log('Parsed courseContent from string:', parsed);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                console.error('Failed to parse courseContent:', e, 'raw:', courseContent);
+                return [];
+            }
+        }
+        console.log('courseContent type:', typeof courseContent, 'value:', courseContent);
+        return [];
+    }, [courseContent]);
+
+    const videoData = parsedCourseContent?.[selectedChapterIndex]?.youtubeVideo;
+    const topics = parsedCourseContent?.[selectedChapterIndex]?.courseData?.topics;
 
     const youtubeOpts = useMemo(
         () => ({
@@ -51,12 +81,12 @@ function ChapterContent({ courseInfo, refreshData }) {
     }, [selectedChapterIndex]);
 
     const isFirstChapter = selectedChapterIndex === 0;
-    const isLastChapter = !courseContent || selectedChapterIndex >= courseContent.length - 1;
+    const isLastChapter = !parsedCourseContent || selectedChapterIndex >= parsedCourseContent.length - 1;
     const isFirstSlide = selectedTopicIndex === 0;
     const isLastSlide = topicList.length === 0 ? true : selectedTopicIndex >= topicList.length - 1;
 
     const getTopicCountForChapter = (chapterIndex) => {
-        const chapterTopics = courseContent?.[chapterIndex]?.courseData?.topics;
+        const chapterTopics = parsedCourseContent?.[chapterIndex]?.courseData?.topics;
         if (Array.isArray(chapterTopics)) return chapterTopics.length;
         return chapterTopics ? 1 : 0;
     };
@@ -87,7 +117,7 @@ function ChapterContent({ courseInfo, refreshData }) {
 
         if (!isLastChapter) {
             setSelectedChapterIndex((i) => {
-                const maxIndex = (courseContent?.length ?? 1) - 1;
+                const maxIndex = (parsedCourseContent?.length ?? 1) - 1;
                 return Math.min(maxIndex, i + 1);
             });
         }
@@ -127,7 +157,7 @@ function ChapterContent({ courseInfo, refreshData }) {
         }
     };
 
-    if (!courseContent || courseContent.length === 0) {
+    if (!parsedCourseContent || parsedCourseContent.length === 0) {
         return <div className="p-10 text-sm text-muted-foreground">No course content found.</div>;
     }
 
@@ -135,8 +165,7 @@ function ChapterContent({ courseInfo, refreshData }) {
         <div className="flex-1 min-w-0 p-6 bg-background rounded-xl border border-border">
             <div className="flex justify-between items-center">
                 <h2 className="font-bold text-2xl">
-                    {selectedChapterIndex + 1}.
-                    {courseContent?.[selectedChapterIndex]?.courseData?.chapterName}
+                    {selectedChapterIndex + 1}. {parsedCourseContent?.[selectedChapterIndex]?.courseData?.chapterName}
                 </h2>
 
                 {!completedChapter?.includes(selectedChapterIndex) ? (
@@ -165,13 +194,10 @@ function ChapterContent({ courseInfo, refreshData }) {
                 </Button>
             </div>
 
-            <div
-                className={showVideos ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "hidden"}
-                aria-hidden={!showVideos}
-            >
-                {videoData?.map(
-                    (video, index) =>
-                        index < 2 && (
+            {showVideos && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {videoData && videoData.length > 0 ? (
+                        videoData.slice(0, 2).map((video, index) => (
                             <div key={video?.videoId ?? index} className="w-full">
                                 <div className="w-full aspect-video overflow-hidden rounded-lg bg-secondary">
                                     <YouTube
@@ -182,9 +208,14 @@ function ChapterContent({ courseInfo, refreshData }) {
                                     />
                                 </div>
                             </div>
-                        )
-                )}
-            </div>
+                        ))
+                    ) : (
+                        <div className="text-sm text-muted-foreground py-4">
+                            No videos available for this chapter.
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="mt-8">
                 <div className="flex items-center justify-between">
