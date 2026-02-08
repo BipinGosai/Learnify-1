@@ -3,13 +3,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import axios from 'axios';
 import { Loader2, Search } from 'lucide-react'
-import React, { useState , useEffect } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import CourseCard from '../_components/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
-
-function Explore() {
+function ExploreContent() {
     const searchParams = useSearchParams();
     const highlightCourseId = searchParams.get('courseId');
     const [courseList, setCourseList] = useState([]);
@@ -47,7 +46,7 @@ function Explore() {
             </div>
         );
     }
-  return (
+        return (
         <div className="space-y-6">
             <h2 className='font-bold text-3xl'>Explore More Courses</h2>
 
@@ -71,7 +70,22 @@ function Explore() {
                 }
             </div>
         </div>
-  )
+    )
+}
+
+function Explore() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="ml-2">Loading courses...</span>
+                </div>
+            }
+        >
+            <ExploreContent />
+        </Suspense>
+    );
 }
 
 export default Explore
