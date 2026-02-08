@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Learnify
+
+Learnify is an AI-powered learning platform that generates course layouts and content, lets users enroll, and supports a verification flow for professor feedback.
+
+## Live Demo
+
+[Learnify on Vercel](https://vercel.com/anujs-projects-09c7f7a7/learnify-lzuj/GPj16v9h3934GrXWT4B4H9rdbhfB)
+
+## Features
+
+- AI-generated course layout and content
+- Course creation and editing workflow
+- Enroll and learning dashboard
+- Verification and review flow
+
+## Tech Stack
+
+- Next.js (App Router) and React
+- Tailwind CSS and Radix UI
+- Drizzle ORM with Neon (Postgres)
+- Google Gemini APIs and YouTube Data API
+- Nodemailer
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+	```bash
+	npm install
+	```
+2. Run the development server:
+	```bash
+	npm run dev
+	```
+3. Open [http://localhost:3000](http://localhost:3000)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Environment Variables
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a `.env.local` file in the project root and set the following values:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+| Name | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Postgres connection string for Drizzle/Neon |
+| `GEMINI_API_KEY` | yes | Google Gemini key for content generation |
+| `AI_GURU_LAB_API_KEY` or `AI_GURU_LAB_API` | no | Alternative AI provider for layout generation |
+| `YOUTUBE_API_KEY` | no | YouTube Data API key for video enrichment |
+| `SMTP_HOST` | no | SMTP server host |
+| `SMTP_PORT` | no | SMTP server port (defaults to 587) |
+| `SMTP_USER` | no | SMTP username |
+| `SMTP_PASS` | no | SMTP password |
+| `SMTP_FROM` | no | From address (defaults to `SMTP_USER`) |
+| `PROFESSOR_EMAIL` | no | Verification email recipient |
+| `ABC_PROFESSOR_EMAIL` | no | Fallback recipient if `PROFESSOR_EMAIL` is empty |
+| `APP_BASE_URL` | no | Base URL for verification links |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If the SMTP variables are not set, verification emails are disabled.
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` - start the dev server
+- `npm run build` - build for production
+- `npm run start` - start the production server
+- `npm run db:push` - push Drizzle schema changes
