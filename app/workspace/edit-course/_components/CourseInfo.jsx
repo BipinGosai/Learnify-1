@@ -88,6 +88,66 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
     const courseJson = typeof course.courseJson === 'string' ? JSON.parse(course.courseJson) : course.courseJson;
     const courseLayout = courseJson?.course;
 
+    const getTotalDurationMinutes = () => {
+        const chapters = courseLayout?.chapters;
+        if (!Array.isArray(chapters) || chapters.length === 0) return null;
+
+        let totalMinutes = 0;
+
+        chapters.forEach((chapter) => {
+            const duration = chapter?.duration;
+            if (!duration && duration !== 0) return;
+
+            if (typeof duration === 'number') {
+                totalMinutes += duration;
+                return;
+            }
+
+            if (typeof duration === 'string') {
+                const lower = duration.toLowerCase();
+                let minutesForChapter = 0;
+
+                const hoursMatch = lower.match(/(\d+)\s*(?:h|hr|hour|hours)/i);
+                const minutesMatch = lower.match(/(\d+)\s*(?:m|min|minute|minutes)/i);
+
+                if (hoursMatch) {
+                    minutesForChapter += parseInt(hoursMatch[1], 10) * 60;
+                }
+                if (minutesMatch) {
+                    minutesForChapter += parseInt(minutesMatch[1], 10);
+                }
+
+                if (!hoursMatch && !minutesMatch) {
+                    const genericNumberMatch = lower.match(/(\d+(?:\.\d+)?)/);
+                    if (genericNumberMatch) {
+                        minutesForChapter += Math.round(parseFloat(genericNumberMatch[1]));
+                    }
+                }
+
+                totalMinutes += minutesForChapter;
+            }
+        });
+
+        return totalMinutes > 0 ? totalMinutes : null;
+    };
+
+    const formatTotalDuration = (totalMinutes) => {
+        if (!totalMinutes || Number.isNaN(totalMinutes)) return 'Not specified';
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        if (hours && minutes) {
+            return `${hours} ${hours === 1 ? 'Hour' : 'Hours'} ${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`;
+        }
+        if (hours) {
+            return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
+        }
+        return `${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`;
+    };
+
+    const totalDurationLabel = formatTotalDuration(getTotalDurationMinutes());
+
     const parsedCourseContent = (() => {
         const cc = course?.courseContent;
         if (!cc) return null;
@@ -337,7 +397,7 @@ const GenerateCourseContent = async () => {
                         </div>
                         <section>
                             <h2 className='text-sm font-medium text-gray-500'>Duration</h2>
-                            <h2 className='font-semibold'>2 Hours</h2>
+                            <h2 className='font-semibold'>{totalDurationLabel}</h2>
                         </section>
                     </div>
                     
