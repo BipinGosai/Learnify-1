@@ -1,5 +1,9 @@
 # Learnify
 
+
+
+<img width="1888" height="878" alt="Screenshot 2026-02-09 105806" src="https://github.com/user-attachments/assets/1c4c2f30-415a-433b-89b4-fb58464a3018" />
+
 Learnify is an AI-powered learning platform that generates course layouts and content, enables enrollment, and supports a professor verification workflow with feedback.
 
 ## Live Demo
