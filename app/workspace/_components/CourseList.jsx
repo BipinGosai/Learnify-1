@@ -17,7 +17,7 @@ function CourseList() {
         try {
             setLoading(true);
             setError(null);
-            const result = await axios.get('/api/courses');
+            const result = await axios.get('/api/courses?scope=mine');
             setCourseList(Array.isArray(result.data) ? result.data : []);
         } catch (error) {
             console.error('Failed to fetch courses:', error);
@@ -67,7 +67,13 @@ function CourseList() {
   return (
     <div className='mt-10'>
       <h2 className='font-bold text-2xl'>Course List</h2>
-      {courseList?.length == 0 ? 
+            {courseList
+                ?.filter((course) => {
+                    const owner = typeof course?.userEmail === 'string' ? course.userEmail.trim().toLowerCase() : '';
+                    const current = typeof userDetail?.email === 'string' ? userDetail.email.trim().toLowerCase() : '';
+                    return owner && current ? owner === current : false;
+                })
+                ?.length == 0 ? 
       <div className='flex p-7 items-center justify-center flex-col border rounded-2xl mt-2 bg-secondary'>
         <Image src={'/online-education.png'} alt='edu' width={200} height={200}/>
         <h2 className='my-2 text-xl font-bold'>Look like you haven't created any courses yet</h2>
@@ -76,7 +82,13 @@ function CourseList() {
         </AddNewCourseDialog>
         </div>:
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5'>
-            {courseList?.map((course,index)=>(
+                        {courseList
+                            ?.filter((course) => {
+                                const owner = typeof course?.userEmail === 'string' ? course.userEmail.trim().toLowerCase() : '';
+                                const current = typeof userDetail?.email === 'string' ? userDetail.email.trim().toLowerCase() : '';
+                                return owner && current ? owner === current : false;
+                            })
+                            ?.map((course,index)=>(
               <CourseCard course={course} key={index}/>
             ))}
             </div>}

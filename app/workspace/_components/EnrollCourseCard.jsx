@@ -81,7 +81,7 @@ const parseSpecializations = (spec) => {
             <Progress value={CalculatePerProgress()} />
           </div>
 
-          <Link href={'/workspace/view-course/' + course?.cid}>
+          <Link href={'/course/' + course?.cid}>
             <Button className={'w-full'}>
               <PlayCircle />
               Continue Learning

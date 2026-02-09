@@ -9,10 +9,11 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
         const courseId = searchParams.get("courseId"); // string
+        const scope = searchParams.get("scope");
         const userEmail = await getUserEmailFromRequestAsync(req);
 
         //  EXPLORE PAGE: show only verified courses from ALL users
-        if (courseId === "0") {
+        if (scope === "explore" || courseId === "0") {
             const result = await db
                 .select({
                     course: coursesTable,
@@ -42,6 +43,10 @@ export async function GET(req) {
             return NextResponse.json(transformedResult || []);
         }
 
+        if (scope === "mine" && !userEmail) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         // Protected routes
         if (!userEmail) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,47 +70,7 @@ export async function GET(req) {
             if (course.userEmail === userEmail) {
                 return NextResponse.json(course);
             }
-
-            // If the requester already cloned this course (by name), reuse that copy
-            const courseName = course?.name || course?.courseJson?.course?.name || "";
-            if (courseName) {
-                const existingCopy = await db
-                    .select()
-                    .from(coursesTable)
-                    .where(and(eq(coursesTable.userEmail, userEmail), eq(coursesTable.name, courseName)));
-
-                if (existingCopy?.[0]) {
-                    return NextResponse.json({ ...existingCopy[0], duplicatedFrom: course.cid });
-                }
-            }
-
-            // Clone the course for the new user so they can edit/verify independently
-            const newCid = crypto.randomUUID();
-            const [clonedCourse] = await db
-                .insert(coursesTable)
-                .values({
-                    cid: newCid,
-                    courseDomain: course?.courseDomain || newCid,
-                    name: course?.name,
-                    description: course?.description,
-                    noOfChapters: course?.noOfChapters,
-                    includeVideo: course?.includeVideo,
-                    level: course?.level,
-                    category: course?.category,
-                    courseJson: course?.courseJson,
-                    bannerImageUrl: course?.bannerImageUrl,
-                    courseContent: course?.courseContent,
-                    userEmail,
-                    reviewStatus: "draft",
-                    reviewRequestedAt: null,
-                    reviewTokenHash: null,
-                    reviewProfessorEmail: null,
-                    reviewFeedback: null,
-                    reviewReviewedAt: null,
-                })
-                .returning();
-
-            return NextResponse.json({ ...clonedCourse, duplicatedFrom: course.cid });
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         //  User's own courses

@@ -18,7 +18,7 @@ function ExploreContent() {
         try {
             setLoading(true);
             setError(null);
-            const result = await axios.get('/api/courses?courseId=0');
+            const result = await axios.get('/api/courses?scope=explore');
             setCourseList(Array.isArray(result.data) ? result.data : []);
         } catch (error) {
             console.error('Failed to fetch courses:', error);

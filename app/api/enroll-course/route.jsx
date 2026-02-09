@@ -116,7 +116,12 @@ export async function GET(req) {
     .from(coursesTable)
     .innerJoin(enrollCourseTable, eq(coursesTable.cid, enrollCourseTable.cid))
     .leftJoin(professorsTable, eq(coursesTable.reviewProfessorEmail, professorsTable.email))
-    .where(eq(enrollCourseTable.userEmail, userEmail))
+    .where(
+      and(
+        eq(enrollCourseTable.userEmail, userEmail),
+        eq(coursesTable.reviewStatus, "verified")
+      )
+    )
     .orderBy(desc(enrollCourseTable.id));
 
   const transformedResult = result.map(item => ({
