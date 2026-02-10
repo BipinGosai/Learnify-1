@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { setStoredUser } from "@/lib/authClient";
-import { Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
 const allowedEmailDomains = new Set([
   "gmail.com",
@@ -120,9 +120,6 @@ export default function SignInPage() {
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 text-white">
-              <div className="size-8 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center">
-                <GraduationCap className="text-white" size={20} />
-              </div>
               <h2 className="text-white text-xl font-bold tracking-tight">Learnify</h2>
             </div>
           </div>
@@ -130,16 +127,13 @@ export default function SignInPage() {
           <div className="relative z-10 text-white">
             <h3 className="text-3xl font-bold leading-tight mb-4">Master new skills anytime, anywhere.</h3>
             <p className="text-white/80 text-base leading-relaxed max-w-sm">
-              Join a community of millions of learners and start your journey towards excellence today.
+              Join a community of learners and start your journey towards excellence today.
             </p>
           </div>
         </div>
 
         <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-card">
           <div className="lg:hidden flex items-center gap-2 text-foreground mb-8">
-            <div className="size-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-              <GraduationCap className="text-sidebar-primary-foreground" size={20} />
-            </div>
             <h2 className="text-xl font-bold tracking-tight">Learnify</h2>
           </div>
 
