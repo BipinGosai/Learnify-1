@@ -80,7 +80,7 @@ function ChapterListSidebar({ courseInfo, isLoading = false }) {
                 `${selectedChapterIndex === index ? "ring-1 ring-border bg-white" : ""}`
               }
             >
-              <span className="block min-w-0 whitespace-normal break-words">
+              <span className="block min-w-0 whitespace-normal wrap-break-word">
                 {index + 1}. {chapter.courseData.chapterName}
               </span>
             </AccordionTrigger>
@@ -94,7 +94,7 @@ function ChapterListSidebar({ courseInfo, isLoading = false }) {
                       `${completedChapter.includes(index) ? "bg-purple-200 text-purple-800" : "bg-white"}`
                     }
                   >
-                    <span className="block whitespace-normal break-words">
+                    <span className="block whitespace-normal wrap-break-word">
                       {topic?.topic}
                     </span>
                   </div>
