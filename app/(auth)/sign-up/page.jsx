@@ -6,22 +6,82 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff, GraduationCap, Lock, Mail, User } from "lucide-react";
 
+function getEmailError(value) {
+  if (typeof value !== "string") return "Email is required";
+  const email = value.trim();
+  if (!email) return "Email is required";
+  if (/\s/.test(email)) return "Email cannot contain spaces";
+  if (email.length > 254) return "Email is too long";
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf("@")) return "Email must contain a single @";
+
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+
+  if (!/^[A-Za-z][A-Za-z0-9._+-]*$/.test(local)) {
+    return "Email username must start with a letter and use valid characters";
+  }
+  if (local.startsWith(".") || local.endsWith(".") || local.includes("..")) {
+    return "Email username has invalid dots";
+  }
+
+  if (!/^[A-Za-z0-9.-]+$/.test(domain)) return "Email domain has invalid characters";
+  if (domain.startsWith("-") || domain.endsWith("-") || domain.includes("..")) {
+    return "Email domain is invalid";
+  }
+
+  const labels = domain.split(".");
+  if (labels.length < 2) return "Email domain must include a TLD";
+  if (labels.some((label) => !label || label.startsWith("-") || label.endsWith("-"))) {
+    return "Email domain labels are invalid";
+  }
+
+  const tld = labels[labels.length - 1];
+  if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email TLD is invalid";
+
+  return null;
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  const emailError = useMemo(() => getEmailError(email), [email]);
+  const passwordError = useMemo(() => {
+    if (!password) return "Password is required";
+    if (password.length > 8) return "Password must be 8 characters or less";
+    return null;
+  }, [password]);
+  const confirmPasswordError = useMemo(() => {
+    if (!confirmPassword) return "Confirm your password";
+    if (confirmPassword !== password) return "Passwords do not match";
+    return null;
+  }, [confirmPassword, password]);
+
   const canSubmit = useMemo(() => {
-    return name.trim().length > 0 && email.trim().length > 0 && password.trim().length > 0 && !submitting;
-  }, [name, email, password, submitting]);
+    return (
+      name.trim().length > 0 &&
+      !emailError &&
+      !passwordError &&
+      !confirmPasswordError &&
+      !submitting
+    );
+  }, [name, emailError, passwordError, confirmPasswordError, submitting]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    if (emailError || passwordError || confirmPasswordError) {
+      setError(emailError || passwordError || confirmPasswordError);
+      return;
+    }
     setSubmitting(true);
     try {
       await axios.post("/api/auth/sign-up", {
@@ -114,6 +174,7 @@ export default function SignUpPage() {
                   className="block w-full pl-11 pr-4 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
                 />
               </div>
+              {emailError && <div className="text-xs text-destructive mt-2">{emailError}</div>}
             </div>
 
             <div>
@@ -128,6 +189,7 @@ export default function SignUpPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  maxLength={8}
                   className="block w-full pl-11 pr-11 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
                 />
                 <button
@@ -139,6 +201,34 @@ export default function SignUpPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordError && <div className="text-xs text-destructive mt-2">{passwordError}</div>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2" htmlFor="confirmPassword">Confirm password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="text-muted-foreground" size={18} />
+                </div>
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  maxLength={8}
+                  className="block w-full pl-11 pr-11 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {confirmPasswordError && <div className="text-xs text-destructive mt-2">{confirmPasswordError}</div>}
             </div>
 
             {error && <div className="text-sm text-destructive">{error}</div>}
