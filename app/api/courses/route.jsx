@@ -5,6 +5,8 @@ import { and, desc, eq, sql, leftJoin } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
+const HIDDEN_COURSE_IDS = new Set([25]);
+
 export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
@@ -40,7 +42,9 @@ export async function GET(req) {
                 } : null
             }));
 
-            return NextResponse.json(transformedResult || []);
+            const filteredResult = transformedResult.filter(course => !HIDDEN_COURSE_IDS.has(course.id));
+
+            return NextResponse.json(filteredResult || []);
         }
 
         if (scope === "mine" && !userEmail) {

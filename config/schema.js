@@ -52,7 +52,7 @@ export const professorsTable = pgTable('professors', {
 
 export const enrollCourseTable=pgTable('enrollCourse',{
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  cid:varchar('cid').references(()=>coursesTable.cid),
+  cid:varchar('cid').references(()=>coursesTable.cid, { onDelete: 'cascade' }),
   userEmail:varchar('userEmail').references(()=>usersTable.email).notNull(),
   completedChapters:json()
 })
