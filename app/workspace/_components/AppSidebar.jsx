@@ -58,8 +58,13 @@ function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className={'p-4'} >
-        <Image src={'/logo.svg'} alt='logo' width={130} height={120}/>
-        </SidebarHeader>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="flex items-center">
+          <Image src={'/logo.svg'} alt='logo' width={130} height={120}/>
+        </button>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup >
           <AddNewCourseDialog>
