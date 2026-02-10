@@ -19,9 +19,107 @@ Schema:
 :User Input:
 `;
 
+const FEEDBACK_PROMPT = `You are given a course JSON and professor feedback. Update the course to satisfy the feedback.
+Rules:
+- Keep existing fields unless feedback requires changes.
+- Add, remove, or rename chapters based on feedback.
+- Ensure noOfChapters matches chapters.length.
+- Return JSON only, matching this schema exactly.
+Schema:
+{
+    "course": {
+        "name": "string",
+        "description": "string",
+        "category": "string",
+        "level": "string",
+        "includeVideo": "boolean",
+        "noOfChapters": "number",
+        "chapters": [
+            {
+                "chapterName": "string",
+                "duration": "string",
+                "topics": ["string"],
+                "imagePrompt": "string"
+            }
+        ]
+    }
+}
+Course JSON:
+`;
+
+const TOPICS_PROMPT = `Generate a concise list of 4-6 topics for the given chapter.
+Rules:
+- Topics must be strings only.
+- Return JSON only in this shape:
+{ "topics": ["string"] }
+Chapter:
+`;
+
+const normalizeCourseLayout = (input) => {
+    if (!input) return null;
+    if (typeof input === 'string') {
+        try {
+            const parsed = JSON.parse(input);
+            return parsed?.course ? parsed.course : parsed;
+        } catch {
+            return null;
+        }
+    }
+    return input?.course ? input.course : input;
+};
+
+const applyFeedbackToCourseLayout = async (courseLayout, feedback) => {
+        if (!courseLayout || !feedback) return courseLayout;
+        try {
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+                const payload = {
+                        course: courseLayout,
+                        feedback,
+                };
+
+                const result = await model.generateContent(
+                        FEEDBACK_PROMPT + JSON.stringify(payload)
+                );
+                const response = await result.response;
+                const text = response.text();
+                const rawJson = text.replace(/```json/i, '').replace(/```/g, '').trim();
+                const updated = JSON.parse(rawJson);
+                if (updated?.course && Array.isArray(updated.course.chapters)) {
+                        return updated.course;
+                }
+        } catch (error) {
+                console.error('Failed to apply feedback to course layout:', error);
+        }
+        return courseLayout;
+};
+
+    const ensureChapterTopics = async (chapter) => {
+        const topics = Array.isArray(chapter?.topics) ? chapter.topics.filter(Boolean) : [];
+        if (topics.length > 0) return chapter;
+        try {
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const result = await model.generateContent(TOPICS_PROMPT + JSON.stringify({
+                chapterName: chapter?.chapterName,
+                duration: chapter?.duration,
+            }));
+            const response = await result.response;
+            const text = response.text();
+            const rawJson = text.replace(/```json/i, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(rawJson);
+            const generatedTopics = Array.isArray(parsed?.topics) ? parsed.topics.filter(Boolean) : [];
+            if (generatedTopics.length > 0) {
+                return { ...chapter, topics: generatedTopics };
+            }
+        } catch (error) {
+            console.error('Failed to generate topics for chapter:', chapter?.chapterName, error);
+        }
+        return { ...chapter, topics: [] };
+    };
+
 export async function POST(req) {
     const { courseJson, courseTitle, courseId } = await req.json();
-    const chapters = courseJson?.chapters;
     if (!courseId) {
         return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
     }
@@ -37,9 +135,21 @@ export async function POST(req) {
         );
     }
 
+    const baseLayout = normalizeCourseLayout(courseJson) || normalizeCourseLayout(existingCourse?.courseJson);
+    let workingLayout = baseLayout;
+
+    if (existingCourse?.reviewStatus === 'needs_changes' && existingCourse?.reviewFeedback) {
+        workingLayout = await applyFeedbackToCourseLayout(baseLayout, existingCourse.reviewFeedback);
+    }
+
+    const chapters = workingLayout?.chapters;
+    if (!Array.isArray(chapters) || chapters.length === 0) {
+        return NextResponse.json({ error: 'courseJson.chapters is required' }, { status: 400 });
+    }
+
     // Check for duplicate VERIFIED course with same name and category
-    const courseName = (courseTitle || existingCourse?.name || '').trim();
-    const courseCategory = (courseJson?.course?.category || existingCourse?.category || '').trim();
+    const courseName = (courseTitle || existingCourse?.name || workingLayout?.name || '').trim();
+    const courseCategory = (workingLayout?.category || existingCourse?.category || '').trim();
     if (courseName && courseCategory) {
         const verifiedDuplicates = await db
             .select()
@@ -67,11 +177,14 @@ export async function POST(req) {
         }
     }
 
-    if (!Array.isArray(chapters) || chapters.length === 0) {
-        return NextResponse.json({ error: 'courseJson.chapters is required' }, { status: 400 });
-    }
+    const normalizedChapters = await Promise.all(chapters.map((chapter) => ensureChapterTopics(chapter)));
+    const chapterNameSet = new Set(
+        normalizedChapters
+            .map((chapter) => (chapter?.chapterName || '').toLowerCase().trim())
+            .filter(Boolean)
+    );
 
-    const promises = chapters.map(async (chapter) => {
+    const promises = normalizedChapters.map(async (chapter) => {
         try {
             console.log('Generating content for chapter:', chapter?.chapterName);
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -117,12 +230,24 @@ export async function POST(req) {
     });
 
     const CourseContent = await Promise.all(promises);
+    const filteredContent = CourseContent.filter((entry) => {
+        const name = entry?.courseData?.chapterName || '';
+        return chapterNameSet.size === 0
+            ? true
+            : chapterNameSet.has(name.toLowerCase().trim());
+    });
 
-    console.log('Generated CourseContent:', JSON.stringify(CourseContent, null, 2));
+    console.log('Generated CourseContent:', JSON.stringify(filteredContent, null, 2));
 
     // Save to database
+    const updatedCourseJson = workingLayout
+        ? { course: { ...workingLayout, noOfChapters: chapters.length } }
+        : existingCourse?.courseJson;
+
     const dbResp = await db.update(coursesTable).set({
-        courseContent: CourseContent,
+        courseContent: filteredContent,
+        courseJson: updatedCourseJson,
+        noOfChapters: chapters.length,
         reviewStatus: 'draft',
         reviewRequestedAt: null,
         reviewTokenHash: null,
@@ -135,7 +260,8 @@ export async function POST(req) {
 
     return NextResponse.json({
         courseName: courseTitle,
-        CourseContent: CourseContent,
+        CourseContent: filteredContent,
+        courseJson: updatedCourseJson,
         dbUpdateCount: dbResp.rowCount
     });
 }
