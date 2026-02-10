@@ -6,6 +6,62 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
 
+const allowedEmailDomains = new Set([
+  "gmail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+]);
+
+function getEmailError(value) {
+  if (typeof value !== "string") return "Email is required";
+  const email = value.trim();
+  if (!email) return "Email is required";
+  if (/\s/.test(email)) return "Email cannot contain spaces";
+  if (email.length > 254) return "Email is too long";
+
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf("@")) return "Email must contain a single @";
+
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1).toLowerCase();
+
+  if (!/^[A-Za-z][A-Za-z0-9._+-]*$/.test(local)) {
+    return "Email username must start with a letter and use valid characters";
+  }
+  if (local.startsWith(".") || local.endsWith(".") || local.includes("..")) {
+    return "Email username has invalid dots";
+  }
+
+  if (!/^[A-Za-z0-9.-]+$/.test(domain)) return "Email domain has invalid characters";
+  if (domain.startsWith("-") || domain.endsWith("-") || domain.includes("..")) {
+    return "Email domain is invalid";
+  }
+
+  const labels = domain.split(".");
+  if (labels.length < 2) return "Email domain must include a TLD";
+  if (labels.some((label) => !label || label.startsWith("-") || label.endsWith("-"))) {
+    return "Email domain labels are invalid";
+  }
+
+  const tld = labels[labels.length - 1];
+  if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email TLD is invalid";
+
+  if (!allowedEmailDomains.has(domain)) {
+    return "Email domain must be gmail.com, yahoo.com, outlook.com, or hotmail.com";
+  }
+
+  return null;
+}
+
+function getPasswordError(value) {
+  if (typeof value !== "string") return "Password is required";
+  if (!value) return "Password is required";
+  const nonSpaceCount = value.replace(/\s/g, "").length;
+  if (nonSpaceCount < 8) return "Password must be at least 8 characters (spaces don't count)";
+  return null;
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -14,13 +70,20 @@ export default function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  const emailError = useMemo(() => getEmailError(email), [email]);
+  const passwordError = useMemo(() => getPasswordError(password), [password]);
+
   const canSubmit = useMemo(() => {
-    return email.trim().length > 0 && password.trim().length > 0 && !submitting;
-  }, [email, password, submitting]);
+    return !emailError && !passwordError && !submitting;
+  }, [emailError, passwordError, submitting]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    if (emailError || passwordError) {
+      setError(emailError || passwordError);
+      return;
+    }
     setSubmitting(true);
     try {
       await axios.post("/api/auth/sign-in", {
@@ -95,6 +158,7 @@ export default function SignInPage() {
                   className="block w-full pl-11 pr-4 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
                 />
               </div>
+              {emailError && <div className="text-xs text-destructive mt-2">{emailError}</div>}
             </div>
 
             <div>
@@ -120,6 +184,7 @@ export default function SignInPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordError && <div className="text-xs text-destructive mt-2">{passwordError}</div>}
             </div>
 
             {error && <div className="text-sm text-destructive">{error}</div>}
