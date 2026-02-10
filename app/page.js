@@ -35,7 +35,7 @@ export default function Home() {
       </nav>
 
       {/* --- HERO SECTION --- */}
-      <header className="relative overflow-hidden text-white pt-24 pb-36 px-6 md:px-12 bg-gradient-to-br from-purple-700 via-violet-600 to-fuchsia-500">
+      <header className="relative overflow-hidden text-white pt-24 pb-36 px-6 md:px-12 bg-linear-to-br from-purple-700 via-violet-600 to-fuchsia-500">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
             <h1 className="text-6xl md:text-7xl font-extrabold leading-[1.1] tracking-tight">
@@ -57,7 +57,7 @@ export default function Home() {
 
           {/* HERO IMAGE CONTAINER */}
           <div className="relative group">
-            <div className="w-full aspect-[4/3] bg-white/10 rounded-[2.5rem] border border-white/20 backdrop-blur-md overflow-hidden flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
+            <div className="w-full aspect-4/3 bg-white/10 rounded-[2.5rem] border border-white/20 backdrop-blur-md overflow-hidden flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
               <Image 
                 src="/photo.png" 
                 alt="AI Learning Platform Preview"

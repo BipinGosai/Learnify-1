@@ -101,7 +101,7 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-background">
-      <div className="w-full max-w-[1024px] bg-card rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[600px] border border-border">
+      <div className="w-full max-w-5xl bg-card rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-150 border border-border">
         <div
           className="hidden lg:flex lg:w-1/2 bg-cover bg-center relative p-12 flex-col justify-between"
           style={{
@@ -110,7 +110,7 @@ export default function SignInPage() {
           }}
         >
           <div className="absolute inset-0 bg-sidebar-primary/40 mix-blend-multiply" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 text-white">
