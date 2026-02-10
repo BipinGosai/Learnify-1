@@ -45,10 +45,10 @@ function getEmailError(value) {
   }
 
   const tld = labels[labels.length - 1];
-  if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email TLD is invalid";
+  if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email is invalid";
 
   if (!allowedEmailDomains.has(domain)) {
-    return "Email domain must be gmail.com, yahoo.com, outlook.com, or hotmail.com";
+    return "Use correct Email Domain ";
   }
 
   return null;

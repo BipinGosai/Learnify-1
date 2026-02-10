@@ -38,10 +38,6 @@ export default function Home() {
       <header className="relative overflow-hidden text-white pt-24 pb-36 px-6 md:px-12 bg-gradient-to-br from-purple-700 via-violet-600 to-fuchsia-500">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm backdrop-blur-lg border border-white/20">
-              <span className="flex h-2 w-2 rounded-full bg-fuchsia-300 animate-pulse"></span>
-              <span className="font-medium text-white/90">Powered by Advanced AI</span>
-            </div>
             <h1 className="text-6xl md:text-7xl font-extrabold leading-[1.1] tracking-tight">
               Learn Smarter <br /> with <span className="text-fuchsia-200">AI Tutors</span>
             </h1>
@@ -51,10 +47,10 @@ export default function Home() {
 
             <div className="flex flex-wrap gap-4 pt-4">
               <Button asChild size="lg" className="bg-white text-purple-700 hover:bg-slate-50 rounded-2xl font-bold px-10 h-14 shadow-xl transition-transform hover:scale-105">
-                <Link href="/sign-in">Get Started</Link>
+                <Link href="/sign-up">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-2xl font-bold px-10 h-14 bg-transparent border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm transition-transform hover:scale-105">
-                <Link href="/sign-up">Sign Up</Link>
+                <Link href="/sign-in">Sign In</Link>
               </Button>
             </div>
           </div>
