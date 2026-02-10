@@ -4,6 +4,8 @@ import { db } from "@/config/db";
 import { NextResponse } from "next/server";
 import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
+const HIDDEN_COURSE_IDS = new Set([25]);
+
 // Handle course enrollment
 export async function POST(req) {
   const { courseId } = await req.json();
@@ -73,6 +75,9 @@ export async function GET(req) {
     }
 
     const course = row?.courses;
+    if (course && HIDDEN_COURSE_IDS.has(course.id)) {
+      return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+    }
     const professor = row?.professors;
     const reviewStatus = course?.reviewStatus ?? "draft";
 
@@ -137,7 +142,9 @@ export async function GET(req) {
     enrollCourse: item.enrollCourse
   }));
 
-  return NextResponse.json(transformedResult);
+  const filteredResult = transformedResult.filter(item => !HIDDEN_COURSE_IDS.has(item?.courses?.id));
+
+  return NextResponse.json(filteredResult);
 }
 
 export  async function PUT(req) {
