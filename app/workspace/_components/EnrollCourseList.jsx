@@ -13,6 +13,10 @@ function EnrollCourseList() {
 
   const [enrolledCourseList, setEnrolledCourseList]=useState([]);
   const [loading, setLoading] = useState(true);
+  const isRubyCourse = (course) => {
+    const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
+    return name === 'ruby';
+  };
     useEffect(()=>{
         GetEnrolledCourse();
     }, [])
@@ -20,7 +24,8 @@ function EnrollCourseList() {
         try {
           setLoading(true);
           const result= await axios.get('/api/enroll-course');
-          setEnrolledCourseList(Array.isArray(result.data) ? result.data : []);
+          const list = Array.isArray(result.data) ? result.data : [];
+          setEnrolledCourseList(list.filter((item) => !isRubyCourse(item?.courses)));
         } catch (err) {
           setEnrolledCourseList([]);
         } finally {

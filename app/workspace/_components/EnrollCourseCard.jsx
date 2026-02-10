@@ -44,6 +44,9 @@ const parseSpecializations = (spec) => {
     return [];
 };
 
+  const progressPercent = CalculatePerProgress();
+  const isComplete = progressPercent >= 100;
+
   return (
     <>
       <div className='shadow-sm rounded-xl overflow-hidden border border-border bg-background'>
@@ -76,16 +79,23 @@ const parseSpecializations = (spec) => {
             
             <div className='flex items-center justify-between text-sm text-muted-foreground'>
               <span>Progress</span>
-              <span className='text-primary font-medium'>{CalculatePerProgress()}%</span>
+              <span className='text-primary font-medium'>{progressPercent}%</span>
             </div>
-            <Progress value={CalculatePerProgress()} />
+            <Progress value={progressPercent} />
           </div>
 
           <Link href={'/course/' + course?.cid}>
-            <Button className={'w-full'}>
-              <PlayCircle />
-              Continue Learning
-            </Button>
+            {isComplete ? (
+              <Button className='w-full bg-green-600 hover:bg-green-700 text-white'>
+                <CheckCircle2 />
+                Review Course
+              </Button>
+            ) : (
+              <Button className='w-full'>
+                <PlayCircle />
+                Continue Learning
+              </Button>
+            )}
           </Link>
         </div>
       </div>

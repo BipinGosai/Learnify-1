@@ -14,12 +14,17 @@ function ExploreContent() {
     const [courseList, setCourseList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const isRubyCourse = (course) => {
+        const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
+        return name === 'ruby';
+    };
     const GetCourseList = async () => {
         try {
             setLoading(true);
             setError(null);
             const result = await axios.get('/api/courses?scope=explore');
-            setCourseList(Array.isArray(result.data) ? result.data : []);
+            const list = Array.isArray(result.data) ? result.data : [];
+            setCourseList(list.filter((course) => !isRubyCourse(course)));
         } catch (error) {
             console.error('Failed to fetch courses:', error);
             setError('Failed to load courses. Please try again later.');
