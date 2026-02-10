@@ -60,6 +60,21 @@ function CourseCard({ course }) {
     return [];
   };
 
+  const getProgressPercent = () => {
+    const enroll = course?.enrollCourse;
+    if (!enroll) return null;
+
+    const completed = Array.isArray(enroll.completedChapters) ? enroll.completedChapters.length : 0;
+    const totalFromContent = Array.isArray(course?.courseContent) ? course.courseContent.length : 0;
+    const totalFromMeta = course?.noOfChapters || courseJson?.noOfChapters || 0;
+    const total = totalFromContent || totalFromMeta || 0;
+    if (!total) return 0;
+    return Math.round((completed / total) * 100);
+  };
+
+  const progressPercent = getProgressPercent();
+  const isComplete = progressPercent !== null && progressPercent >= 100;
+
   return (
     <>
       <div className='shadow-sm rounded-xl overflow-hidden border border-border bg-background'>
@@ -112,9 +127,20 @@ function CourseCard({ course }) {
               {courseJson?.noOfChapters} Chapters
             </h2>
             {reviewStatus === 'verified' ? (
-              <Button size={'sm'} className='shrink-0 gap-2' onClick={enrollAndContinue} disabled={enrolling}>
-                {enrolling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PlayCircle className='h-4 w-4' />}
-                Enroll & Continue
+              <Button
+                size={'sm'}
+                className={isComplete ? 'shrink-0 gap-2 bg-green-600 hover:bg-green-700 text-white' : 'shrink-0 gap-2'}
+                onClick={enrollAndContinue}
+                disabled={enrolling}
+              >
+                {enrolling ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : isComplete ? (
+                  <CheckCircle2 className='h-4 w-4' />
+                ) : (
+                  <PlayCircle className='h-4 w-4' />
+                )}
+                {isComplete ? 'Review Course' : 'Enroll & Continue'}
               </Button>
             ) : (
               <Link href={'/workspace/edit-course/' + course?.cid}>

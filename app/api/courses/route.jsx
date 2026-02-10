@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { db } from "@/config/db";
-import { coursesTable, professorsTable } from "@/config/schema";
+import { coursesTable, professorsTable, enrollCourseTable } from "@/config/schema";
 import { and, desc, eq, sql, leftJoin } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getUserEmailFromRequestAsync } from "@/lib/authServer";
@@ -44,7 +44,22 @@ export async function GET(req) {
 
             const filteredResult = transformedResult.filter(course => !HIDDEN_COURSE_IDS.has(course.id));
 
-            return NextResponse.json(filteredResult || []);
+            if (!userEmail) {
+                return NextResponse.json(filteredResult || []);
+            }
+
+            const enrollRows = await db
+                .select()
+                .from(enrollCourseTable)
+                .where(eq(enrollCourseTable.userEmail, userEmail));
+            const enrollByCid = new Map(enrollRows.map((row) => [row.cid, row]));
+
+            const withEnrollments = filteredResult.map((course) => ({
+                ...course,
+                enrollCourse: enrollByCid.get(course.cid) || null,
+            }));
+
+            return NextResponse.json(withEnrollments || []);
         }
 
         if (scope === "mine" && !userEmail) {
@@ -104,7 +119,18 @@ export async function GET(req) {
             } : null
         }));
 
-        return NextResponse.json(transformedResult || []);
+        const enrollRows = await db
+            .select()
+            .from(enrollCourseTable)
+            .where(eq(enrollCourseTable.userEmail, userEmail));
+        const enrollByCid = new Map(enrollRows.map((row) => [row.cid, row]));
+
+        const withEnrollments = transformedResult.map((course) => ({
+            ...course,
+            enrollCourse: enrollByCid.get(course.cid) || null,
+        }));
+
+        return NextResponse.json(withEnrollments || []);
 
     } catch (error) {
         console.error("Error in courses API:", error);
