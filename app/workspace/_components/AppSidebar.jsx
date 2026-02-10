@@ -1,6 +1,7 @@
 
 "use client"
 import React from 'react'
+import Image from 'next/image'
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +13,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Book, Compass, LayoutDashboard, UserCircle2Icon } from 'lucide-react'
 import Link from 'next/link'
