@@ -3,6 +3,7 @@ import { SelectedChapterIndexContext } from '@/context/SelectedChapterIndexConte
 import { UserDetailContext } from '@/context/UserDetailContext';
 import axios from "axios";
 import React,{useEffect, useState} from "react";
+import { getStoredUser } from '@/lib/authClient';
 
 function Provider ({children}) {
     const [userDetail,setUserDetail]=useState(null);
@@ -15,11 +16,15 @@ function Provider ({children}) {
 
     const LoadMe = async ()=>{
         setIsUserLoading(true);
+        const storedUser = getStoredUser();
+        if (storedUser?.email) {
+            axios.defaults.headers.common['x-user-email'] = storedUser.email;
+        }
         try {
             const resp = await axios.get('/api/auth/me');
             setUserDetail(resp.data?.user);
         } catch (err) {
-            setUserDetail(null);
+            setUserDetail(storedUser ?? null);
         } finally {
             setIsUserLoading(false);
         }

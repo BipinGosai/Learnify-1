@@ -17,6 +17,7 @@ export default function SignOutPage() {
         // ignore
       } finally {
         clearStoredUser();
+        delete axios.defaults.headers.common['x-user-email'];
         if (alive) router.replace('/');
       }
     })();

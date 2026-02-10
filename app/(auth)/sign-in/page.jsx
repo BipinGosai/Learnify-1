@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { setStoredUser } from "@/lib/authClient";
 import { Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
 
 const allowedEmailDomains = new Set([
@@ -86,10 +87,15 @@ export default function SignInPage() {
     }
     setSubmitting(true);
     try {
-      await axios.post("/api/auth/sign-in", {
+      const resp = await axios.post("/api/auth/sign-in", {
         email: email.trim().toLowerCase(),
         password,
       });
+      const user = resp?.data?.user;
+      if (user?.email) {
+        setStoredUser(user);
+        axios.defaults.headers.common['x-user-email'] = user.email;
+      }
       router.push("/workspace");
     } catch (err) {
       const msg = err?.response?.data?.error;
