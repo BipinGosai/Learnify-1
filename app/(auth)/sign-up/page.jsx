@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff, GraduationCap, Lock, Mail, User } from "lucide-react";
 
+const VALID_EMAIL_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
+  'icloud.com', 'protonmail.com', 'aol.com', 'mail.com',
+  'zoho.com', 'yandex.com', 'gmx.com', 'proton.me'
+];
+
 function getEmailError(value) {
   if (typeof value !== "string") return "Email is required";
   const email = value.trim();
@@ -16,7 +22,7 @@ function getEmailError(value) {
   if (atIndex <= 0 || atIndex !== email.lastIndexOf("@")) return "Email must contain a single @";
 
   const local = email.slice(0, atIndex);
-  const domain = email.slice(atIndex + 1);
+  const domain = email.slice(atIndex + 1).toLowerCase();
 
   if (!/^[A-Za-z][A-Za-z0-9._+-]*$/.test(local)) {
     return "Email username must start with a letter and use valid characters";
@@ -39,6 +45,11 @@ function getEmailError(value) {
   const tld = labels[labels.length - 1];
   if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email TLD is invalid";
 
+  // Check if domain is in the allowed list
+  if (!VALID_EMAIL_DOMAINS.includes(domain)) {
+    return `Please use a valid email provider (e.g., ${VALID_EMAIL_DOMAINS.slice(0, 3).join(', ')})`;
+  }
+
   return null;
 }
 
@@ -56,7 +67,9 @@ export default function SignUpPage() {
   const emailError = useMemo(() => getEmailError(email), [email]);
   const passwordError = useMemo(() => {
     if (!password) return "Password is required";
-    if (password.length > 8) return "Password must be 8 characters or less";
+    const passwordWithoutSpaces = password.replace(/\s/g, '');
+    if (password !== passwordWithoutSpaces) return "Password cannot contain spaces";
+    if (passwordWithoutSpaces.length < 8) return "Password must be at least 8 characters";
     return null;
   }, [password]);
   const confirmPasswordError = useMemo(() => {
@@ -189,7 +202,6 @@ export default function SignUpPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  maxLength={8}
                   className="block w-full pl-11 pr-11 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
                 />
                 <button
@@ -216,7 +228,6 @@ export default function SignUpPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  maxLength={8}
                   className="block w-full pl-11 pr-11 py-3.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-sidebar-primary focus:border-transparent transition-all outline-none"
                 />
                 <button
