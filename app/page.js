@@ -21,15 +21,14 @@ export default function Home() {
     <div className="min-h-screen bg-[#FBFAFF] font-sans text-slate-900 scroll-smooth">
       {/* --- NAVBAR --- */}
       <nav className="bg-white/80 backdrop-blur-md py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50 border-b border-purple-100">
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
+        <a
+          href="/"
           className="flex items-center gap-2">
           <div className="w-9 h-9 bg-purple-600 rounded-xl flex items-center justify-center text-white shadow-purple-200 shadow-lg">
             <BookOpen size={20} />
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-800">Learnify</span>
-        </button>
+        </a>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
           <a href="#features" className="hover:text-purple-600 cursor-pointer transition-colors">Features</a>

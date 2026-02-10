@@ -14,6 +14,7 @@ function Course() {
   const [courseInfo, setCourseInfo] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (courseId) {
@@ -22,6 +23,7 @@ function Course() {
   }, [courseId]);
 
   const GetEnrolledCourseById = async () => {
+    setIsLoading(true);
     setLoadError(null);
     try {
       const result = await axios.get("/api/enroll-course?courseId=" + courseId);
@@ -36,6 +38,8 @@ function Course() {
         message: typeof message === "string" ? message : "Failed to load course",
         reviewStatus: e?.response?.data?.reviewStatus,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,7 +53,7 @@ function Course() {
             variant="outline"
             size="sm"
             onClick={() => setIsSidebarOpen((v) => !v)}
-            disabled={!!loadError}
+            disabled={!!loadError || isLoading}
           >
             {isSidebarOpen ? <ChevronLeft /> : <ChevronRight />}
             {isSidebarOpen ? "Hide Chapters" : "Show Chapters"}
@@ -73,8 +77,8 @@ function Course() {
           </div>
         ) : (
           <div className="flex w-full flex-col md:flex-row gap-4 md:gap-6 items-start">
-            {isSidebarOpen && <ChapterListSidebar courseInfo={courseInfo} />}
-            <ChapterContent courseInfo={courseInfo} refreshData={GetEnrolledCourseById} />
+            {isSidebarOpen && <ChapterListSidebar courseInfo={courseInfo} isLoading={isLoading} />}
+            <ChapterContent courseInfo={courseInfo} refreshData={GetEnrolledCourseById} isLoading={isLoading} />
           </div>
         )}
       </div>

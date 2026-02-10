@@ -7,7 +7,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import YouTube from "react-youtube";
 import { toast } from "sonner";
 
-function ChapterContent({ courseInfo, refreshData }) {
+function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
     const { courseId } = useParams();
     const courseContent = courseInfo?.courses?.courseContent;
     const enrollCourse = courseInfo?.enrollCourse;
@@ -156,6 +156,15 @@ function ChapterContent({ courseInfo, refreshData }) {
             setLoading(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex-1 min-w-0 p-6 bg-background rounded-xl border border-border">
+                <div className="text-sm text-muted-foreground">Loading course content...</div>
+                <Loader2Icon className="mt-3 animate-spin" />
+            </div>
+        );
+    }
 
     if (!parsedCourseContent || parsedCourseContent.length === 0) {
         return <div className="p-10 text-sm text-muted-foreground">No course content found.</div>;

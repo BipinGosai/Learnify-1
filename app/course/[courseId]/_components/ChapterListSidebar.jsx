@@ -8,9 +8,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2Icon } from "lucide-react";
 
-function ChapterListSidebar({ courseInfo }) {
+function ChapterListSidebar({ courseInfo, isLoading = false }) {
   const course = courseInfo?.courses;
   const enrollCourse =courseInfo?.enrollCourse;
   const courseContent = courseInfo?.courses?.courseContent;
@@ -39,6 +39,18 @@ function ChapterListSidebar({ courseInfo }) {
     if (!date) return '';
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
+
+  if (isLoading) {
+    return (
+      <aside className="w-full md:w-80 flex-none bg-secondary h-auto md:h-[calc(100svh-10rem)] p-4 rounded-xl border border-border overflow-auto">
+        <h2 className="text-lg font-bold">Chapters</h2>
+        <div className="mt-2 flex flex-col items-start text-sm text-muted-foreground">
+          <span>Loading course chapters...</span>
+          <Loader2Icon className="mt-3 animate-spin" />
+        </div>
+      </aside>
+    );
+  }
 
   if (!parsedCourseContent || parsedCourseContent.length === 0) {
     return (
