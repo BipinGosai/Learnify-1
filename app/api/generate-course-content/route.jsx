@@ -140,6 +140,18 @@ export async function POST(req) {
     });
 }
 
+const MIN_VIDEO_SECONDS = 300;
+
+const parseIsoDurationToSeconds = (isoDuration) => {
+    if (!isoDuration) return 0;
+    const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return 0;
+    const hours = Number(match[1] || 0);
+    const minutes = Number(match[2] || 0);
+    const seconds = Number(match[3] || 0);
+    return hours * 3600 + minutes * 60 + seconds;
+};
+
 // YouTube API helper function
 const GetYoutubeVideo = async (topic) => {
     try {
@@ -160,11 +172,36 @@ const GetYoutubeVideo = async (topic) => {
         
         console.log('Fetching YouTube videos for topic:', topic);
         const resp = await axios.get(YOUTUBE_BASE_URL, { params });
-        const videos = resp.data.items?.map(item => ({
-            videoId: item.id?.videoId,
-            title: item.snippet?.title,
-            thumbnail: item.snippet?.thumbnails?.medium?.url
-        })) || [];
+        const items = resp.data.items || [];
+        const videoIds = items.map(item => item.id?.videoId).filter(Boolean);
+        if (!videoIds.length) {
+            return [];
+        }
+
+        const detailsResp = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+            params: {
+                part: 'contentDetails',
+                id: videoIds.join(','),
+                key: process.env.YOUTUBE_API_KEY
+            }
+        });
+
+        const durationById = new Map(
+            (detailsResp.data.items || []).map(item => [item.id, item.contentDetails?.duration])
+        );
+
+        const videos = items
+            // Filter out Shorts by duration while keeping regular videos.
+            .filter(item => {
+                const duration = durationById.get(item.id?.videoId);
+                const seconds = parseIsoDurationToSeconds(duration);
+                return seconds >= MIN_VIDEO_SECONDS;
+            })
+            .map(item => ({
+                videoId: item.id?.videoId,
+                title: item.snippet?.title,
+                thumbnail: item.snippet?.thumbnails?.medium?.url
+            }));
         
         console.log(`Found ${videos.length} videos for topic: ${topic}`);
         return videos;
