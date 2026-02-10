@@ -7,11 +7,12 @@ import axios from "axios";
 import { setStoredUser } from "@/lib/authClient";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
-const VALID_EMAIL_DOMAINS = [
-  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
-  'icloud.com', 'protonmail.com', 'aol.com', 'mail.com',
-  'zoho.com', 'yandex.com', 'gmx.com', 'proton.me'
-];
+const allowedEmailDomains = new Set([
+  "gmail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+]);
 
 function getEmailError(value) {
   if (typeof value !== "string") return "Email is required";
@@ -46,11 +47,18 @@ function getEmailError(value) {
   const tld = labels[labels.length - 1];
   if (!/^[A-Za-z]{2,24}$/.test(tld)) return "Email TLD is invalid";
 
-  // Check if domain is in the allowed list
-  if (!VALID_EMAIL_DOMAINS.includes(domain)) {
-    return `Please use a valid email provider (e.g., ${VALID_EMAIL_DOMAINS.slice(0, 3).join(', ')})`;
+  if (!allowedEmailDomains.has(domain)) {
+    return "Email domain must be gmail.com, yahoo.com, outlook.com, or hotmail.com";
   }
 
+  return null;
+}
+
+function getPasswordError(value) {
+  if (typeof value !== "string") return "Password is required";
+  if (!value) return "Password is required";
+  const nonSpaceCount = value.replace(/\s/g, "").length;
+  if (nonSpaceCount < 8) return "Password must be at least 8 characters (spaces don't count)";
   return null;
 }
 
