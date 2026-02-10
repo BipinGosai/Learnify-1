@@ -109,6 +109,9 @@ If the SMTP variables are not set, verification emails are disabled.
 ## Scripts
 
 - `npm run dev` - start the dev server
+- `npm run dev` - start the dev server
 - `npm run build` - build for production
 - `npm run start` - start the production server
 - `npm run db:push` - push Drizzle schema changes
+
+
