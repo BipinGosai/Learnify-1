@@ -9,18 +9,25 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 
 
+// List of courses the user has enrolled in.
 function EnrollCourseList() {
 
   const [enrolledCourseList, setEnrolledCourseList]=useState([]);
   const [loading, setLoading] = useState(true);
+  const isRubyCourse = (course) => {
+    const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
+    return name === 'ruby';
+  };
     useEffect(()=>{
+        // Load enrollments on first render.
         GetEnrolledCourse();
     }, [])
     const GetEnrolledCourse= async ()=>{
         try {
           setLoading(true);
           const result= await axios.get('/api/enroll-course');
-          setEnrolledCourseList(Array.isArray(result.data) ? result.data : []);
+          const list = Array.isArray(result.data) ? result.data : [];
+          setEnrolledCourseList(list.filter((item) => !isRubyCourse(item?.courses)));
         } catch (err) {
           setEnrolledCourseList([]);
         } finally {
@@ -42,11 +49,10 @@ function EnrollCourseList() {
       <div className='mt-3'>
         <h2 className='font-bold text-2xl'>Continue learning your course</h2>
         <div className='mt-4 border border-border rounded-2xl p-6 bg-secondary'>
-          <p className='text-muted-foreground'>You haven't enrolled in any courses yet.</p>
-          <p className='text-sm text-muted-foreground mt-1'>Enroll now to start learning.</p>
+          <p className='text-muted-foreground'>You haven't enrolled in any courses yet</p>
           <div className='mt-4'>
             <Button asChild>
-              <Link href='/workspace/explore'>Explore Courses</Link>
+              <Link href='/workspace/explore'>Enroll Now</Link>
             </Button>
           </div>
         </div>

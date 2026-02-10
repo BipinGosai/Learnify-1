@@ -7,17 +7,24 @@ import CourseCard from './CourseCard';
 import { Loader2 } from 'lucide-react';
 import { UserDetailContext } from '@/context/UserDetailContext';
 
+// List of courses created by the current user.
 function CourseList() {
     const [courseList, setCourseList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { userDetail, isUserLoading } = useContext(UserDetailContext);
+    const isRubyCourse = (course) => {
+        const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
+        return name === 'ruby';
+    };
+    // Fetch the user's courses from the API.
     const GetCourseList = async () => {
         try {
             setLoading(true);
             setError(null);
             const result = await axios.get('/api/courses?scope=mine');
-            setCourseList(Array.isArray(result.data) ? result.data : []);
+            const list = Array.isArray(result.data) ? result.data : [];
+            setCourseList(list.filter((course) => !isRubyCourse(course)));
         } catch (error) {
             console.error('Failed to fetch courses:', error);
             setError('Failed to load courses. Please try again later.');
@@ -26,6 +33,7 @@ function CourseList() {
         }
     };
     useEffect(() => {
+        // Wait for user data before requesting personal courses.
         if (isUserLoading) return;
         if (userDetail?.email) {
             GetCourseList();
@@ -73,20 +81,20 @@ function CourseList() {
         );
     }
   return (
-    <div className='mt-10'>
-      <h2 className='font-bold text-2xl'>Course List</h2>
-                        {courseList?.length === 0 ? 
-            <div className='flex p-7 items-center justify-center flex-col border rounded-2xl mt-2 bg-secondary'>
-        <h2 className='my-2 text-xl font-bold'>Look like you haven't created any courses yet</h2>
-        <AddNewCourseDialog>
-        <Button>+ Create your first course</Button>
-        </AddNewCourseDialog>
-        </div>:
+        <div className='mt-10'>
+            <h2 className='font-bold text-2xl'>Your Created Courses</h2>
+            {courseList?.length === 0 ? 
+                <div className='flex p-7 items-center justify-center flex-col border rounded-2xl mt-2 bg-secondary'>
+                    <h2 className='my-2 text-xl font-bold'>You haven't created any courses yet</h2>
+                    <AddNewCourseDialog>
+                        <Button>Create your course</Button>
+                    </AddNewCourseDialog>
+                </div>:
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5'>
-                                                {courseList?.map((course,index)=>(
-              <CourseCard course={course} key={index}/>
-            ))}
-            </div>}
+                    {courseList?.map((course,index)=>(
+                        <CourseCard course={course} key={index}/>
+                    ))}
+                </div>}
     </div>
   )
 }

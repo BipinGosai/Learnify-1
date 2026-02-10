@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 
 
+// Card for a course the user is currently learning.
 function EnrollCourseCard({course,enrollCourse}) {
     const courseJson = course?.courseJson?.course || course;
     const bannerSrc = typeof course?.bannerImageUrl === 'string' ? course.bannerImageUrl.trim() : '';
@@ -23,6 +24,7 @@ function EnrollCourseCard({course,enrollCourse}) {
     const verifiedBy = course?.verifiedBy;
     const reviewedDate = course?.reviewReviewedAt ? new Date(course.reviewReviewedAt) : null;
 
+// Compute progress percentage based on completed chapters.
 const CalculatePerProgress = () => {
   const completed = enrollCourse?.completedChapters?.length ?? 0;
   const total = course?.courseContent?.length ?? 1;
@@ -43,6 +45,9 @@ const parseSpecializations = (spec) => {
     }
     return [];
 };
+
+  const progressPercent = CalculatePerProgress();
+  const isComplete = progressPercent >= 100;
 
   return (
     <>
@@ -76,16 +81,23 @@ const parseSpecializations = (spec) => {
             
             <div className='flex items-center justify-between text-sm text-muted-foreground'>
               <span>Progress</span>
-              <span className='text-primary font-medium'>{CalculatePerProgress()}%</span>
+              <span className='text-primary font-medium'>{progressPercent}%</span>
             </div>
-            <Progress value={CalculatePerProgress()} />
+            <Progress value={progressPercent} />
           </div>
 
           <Link href={'/course/' + course?.cid}>
-            <Button className={'w-full'}>
-              <PlayCircle />
-              Continue Learning
-            </Button>
+            {isComplete ? (
+              <Button className='w-full bg-green-600 hover:bg-green-700 text-white'>
+                <CheckCircle2 />
+                Review Course
+              </Button>
+            ) : (
+              <Button className='w-full'>
+                <PlayCircle />
+                Continue Learning
+              </Button>
+            )}
           </Link>
         </div>
       </div>

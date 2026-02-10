@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 
+// Lightweight loading placeholder.
 function Skeleton({
   className,
   ...props

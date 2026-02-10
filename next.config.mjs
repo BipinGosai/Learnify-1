@@ -6,9 +6,11 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Ensure Turbopack can resolve the project root correctly.
   turbopack: {
     root: __dirname,
   },
+  // Allow optimized images from these hosts.
   images:{
     remotePatterns: [
       {

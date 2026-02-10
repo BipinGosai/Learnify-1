@@ -7,6 +7,7 @@ import { createRawSessionToken, getSessionCookieName, getSessionCookieOptions, g
 
 export async function POST(req) {
   try {
+    // Parse credentials from the request body.
     const body = await req.json().catch(() => ({}));
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body?.password === 'string' ? body.password : '';
@@ -15,6 +16,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'email and password are required' }, { status: 400 });
     }
 
+    // Look up the user and compare hashed passwords.
     const users = await db.select().from(usersTable).where(eq(usersTable.email, email));
     const user = users?.[0];
     if (!user?.passwordHash) {
@@ -26,6 +28,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    // Create a session record and set the cookie.
     const rawToken = createRawSessionToken();
     const tokenHash = hashSessionToken(rawToken);
     const expiresAt = getSessionExpiryDate();
@@ -38,6 +41,7 @@ export async function POST(req) {
     const res = NextResponse.json({
       user: { id: user.id, name: user.name, email: user.email },
     });
+    // Store the raw token in an httpOnly cookie; DB keeps only the hash.
     res.cookies.set(getSessionCookieName(), rawToken, getSessionCookieOptions());
     return res;
   } catch (e) {

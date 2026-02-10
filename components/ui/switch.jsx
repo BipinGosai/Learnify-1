@@ -5,6 +5,7 @@ import * as SwitchPrimitive from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
 
+// Toggle switch control.
 function Switch({
   className,
   ...props

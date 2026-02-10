@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import CourseInfo from '../_components/CourseInfo';
 import ChapterTopicList from '../_components/ChapterTopicList';
 
+// Edit course page: loads course and renders summary + chapters.
 function EditCourse({viewCourse=false}) {
     const {courseId} = useParams();
     const router = useRouter();
@@ -14,6 +15,7 @@ function EditCourse({viewCourse=false}) {
     const [error,setError]=useState('');
 
     useEffect(()=>{
+    // Load the course details when route param is ready.
     if (courseId) GetCourseInfo();
   },[courseId])
 
@@ -21,6 +23,7 @@ function EditCourse({viewCourse=false}) {
         setLoading(true);
         setError('');
         try{
+        // Fetch course info (owner-only).
         const result = await axios.get('/api/courses?courseId='+courseId);
         const data = result.data;
 
@@ -30,7 +33,7 @@ function EditCourse({viewCourse=false}) {
             return;
         }
 
-        // If backend cloned a copy for this user, move to the new id
+        // If backend cloned a copy for this user, move to the new id.
         if (data?.cid && data.cid !== courseId && data?.duplicatedFrom) {
             router.replace('/workspace/edit-course/' + data.cid);
             return;
@@ -49,7 +52,9 @@ function EditCourse({viewCourse=false}) {
   return (
     <div>
       {error && <div className='p-4 mb-4 border rounded-md bg-secondary text-sm'>{error}</div>}
+      {/* Top summary + actions. */}
       <CourseInfo course={course} viewCourse={viewCourse} refreshCourse={GetCourseInfo} />
+      {/* Visual chapter/topic list. */}
       <ChapterTopicList course={course}/>
     </div>
   )

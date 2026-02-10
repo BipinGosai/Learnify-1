@@ -6,6 +6,7 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Slide-over panel built on Radix Dialog.
 function Sheet({
   ...props
 }) {

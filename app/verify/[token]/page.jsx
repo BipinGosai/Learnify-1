@@ -12,6 +12,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
+// Professor review page for verifying AI-generated course content.
 export default function VerifyCoursePage() {
   const { token } = useParams();
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function VerifyCoursePage() {
     let alive = true;
     (async () => {
       try {
+        // Load course data from the verification token.
         setLoading(true);
         setError(null);
         const resp = await axios.get(`/api/verification?token=${encodeURIComponent(token)}`);
@@ -44,10 +46,12 @@ export default function VerifyCoursePage() {
     };
   }, [token]);
 
+  // Can submit if we have a token, a course, and are not in-flight.
   const canSubmit = useMemo(() => {
     return !!token && !!course && !submitting;
   }, [token, course, submitting]);
 
+  // Rejecting requires feedback text.
   const canSubmitRejection = useMemo(() => {
     return canSubmit && feedback.trim().length > 0;
   }, [canSubmit, feedback]);
@@ -57,6 +61,7 @@ export default function VerifyCoursePage() {
     setSubmitting(true);
     setError(null);
     try {
+      // Send approve or request_changes to the API.
       const resp = await axios.post('/api/verification/review', {
         token,
         action,

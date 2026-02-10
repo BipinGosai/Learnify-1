@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { getUserEmailFromRequestAsync } from '@/lib/authServer';
 
+// Turn a title into a URL-friendly slug.
 const toSlug = (value = '') =>
   value
     .toString()
@@ -14,6 +15,7 @@ const toSlug = (value = '') =>
     .replace(/(^-|-$)+/g, '')
     .slice(0, 120);
 
+// Prompt template sent to the AI model for course layout generation.
 const PROMPT = `Generate Learning Course depends on following details. In which Make sure to add Course Name Description (max 2 lines), Chapter Name+ Image Prompt (Create a modern, flat-style 2D digital illustration representing user Topic. Include UI/UX elements such as mockup screens, text blocks, icons, buttons, and creative workspace tools. Add symbolic elements related to user Course, like sticky notes, design components, and visual aids. Use a vibrant color palette (blues, purples, oranges) with a clean, professional look. The illustration should feel creative, tech-savvy, and educational, ideal for visualizing concepts in user Course) for Course Banner in 3d format, Topic under each chapters , Duration for each chapters etc, in JSON format only.
 Schema:{
 "course": {
@@ -39,13 +41,14 @@ Schema:{
 
 export async function POST(req) {
   try {
+    // Read form data and ensure the user is authenticated.
     const { courseId, ...formData } = await req.json();
     const userEmail = await getUserEmailFromRequestAsync(req);
     if (!userEmail) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check for duplicate VERIFIED course with same name & category
+    // Check for duplicate VERIFIED course with same name & category.
     const courseName = (formData?.name || '').trim();
     const courseCategory = (formData?.category || '').trim();
     if (courseName && courseCategory) {
@@ -74,7 +77,7 @@ export async function POST(req) {
       }
     }
 
-    // Google AI content generation
+    // Google AI content generation.
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const config = {
       thinkingConfig: { thinkingBudget: -1 },
@@ -88,7 +91,7 @@ export async function POST(req) {
     const response = await ai.models.generateContent({ model, config, contents });
     const rawResp = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Safe JSON parsing
+    // Safe JSON parsing.
     let JSONResp;
     try {
       const rawJson = rawResp.replace(/```json/i, '').replace(/```/g, '').trim();
@@ -102,7 +105,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'AI response missing course data', rawResp }, { status: 500 });
     }
 
-    // Generate course banner image
+    // Generate course banner image.
     const bannerPrompt =
       (typeof JSONResp.course?.imagePrompt === 'string' && JSONResp.course.imagePrompt.trim())
         ? JSONResp.course.imagePrompt.trim()
@@ -116,7 +119,7 @@ export async function POST(req) {
       formData.courseDomain || JSONResp.course?.name || formData.name || courseId;
     const courseDomain = toSlug(domainSource) || courseId;
 
-    // Save course to database
+    // Save course to database.
     await db.insert(coursesTable).values({
       ...formData,
       courseJson: JSONResp,
@@ -134,6 +137,7 @@ export async function POST(req) {
   }
 }
 
+// Optional helper to generate banner art via a separate AI image API.
 const GenerateImage = async (imagePrompt) => {
   const BASE_URL = 'https://aigurulab.tech';
   try {

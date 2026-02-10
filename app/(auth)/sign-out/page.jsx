@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { clearStoredUser } from "@/lib/authClient";
 
+// Sign out immediately on page load, then redirect home.
 export default function SignOutPage() {
   const router = useRouter();
 
@@ -12,10 +13,12 @@ export default function SignOutPage() {
     let alive = true;
     (async () => {
       try {
+        // Tell the server to clear the session.
         await axios.post('/api/auth/sign-out');
       } catch {
         // ignore
       } finally {
+        // Clean up local user data and cached headers.
         clearStoredUser();
         delete axios.defaults.headers.common['x-user-email'];
         if (alive) router.replace('/');

@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Card for a single course, used across dashboard and explore views.
 function CourseCard({ course }) {
   const courseJson = course?.courseJson.course;
   const bannerSrc = typeof course?.bannerImageUrl === 'string' ? course.bannerImageUrl.trim() : '';
@@ -28,6 +29,7 @@ function CourseCard({ course }) {
   const verifiedBy = course?.verifiedBy;
   const reviewedDate = course?.reviewReviewedAt ? new Date(course.reviewReviewedAt) : null;
 
+  // Enroll the user, then jump into the course reader.
   const enrollAndContinue = async () => {
     if (!course?.cid) return;
     setEnrolling(true);
@@ -59,6 +61,23 @@ function CourseCard({ course }) {
     }
     return [];
   };
+
+  // Compute progress using either content length or metadata.
+  const getProgressPercent = () => {
+    const enroll = course?.enrollCourse;
+    if (!enroll) return null;
+
+    const completed = Array.isArray(enroll.completedChapters) ? enroll.completedChapters.length : 0;
+    const totalFromContent = Array.isArray(course?.courseContent) ? course.courseContent.length : 0;
+    const totalFromMeta = course?.noOfChapters || courseJson?.noOfChapters || 0;
+    const total = totalFromContent || totalFromMeta || 0;
+    if (!total) return 0;
+    return Math.round((completed / total) * 100);
+  };
+
+  const progressPercent = getProgressPercent();
+  const isEnrolled = Boolean(course?.enrollCourse);
+  const isComplete = progressPercent !== null && progressPercent >= 100;
 
   return (
     <>
@@ -106,15 +125,41 @@ function CourseCard({ course }) {
 
 
 
+          {isEnrolled && progressPercent !== null && (
+            <div className='space-y-1'>
+              <div className='flex items-center justify-between text-sm text-muted-foreground'>
+                <span>Progress</span>
+                <span className='text-primary font-medium'>{progressPercent}%</span>
+              </div>
+              <div className='h-2 w-full rounded-full bg-secondary'>
+                <div
+                  className='h-full rounded-full bg-primary transition-all'
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className='flex items-center justify-between gap-3 pt-1'>
             <h2 className='flex items-center text-sm gap-2 text-muted-foreground'>
               <Book className='text-primary h-5 w-5' />
               {courseJson?.noOfChapters} Chapters
             </h2>
             {reviewStatus === 'verified' ? (
-              <Button size={'sm'} className='shrink-0 gap-2' onClick={enrollAndContinue} disabled={enrolling}>
-                {enrolling ? <Loader2 className='h-4 w-4 animate-spin' /> : <PlayCircle className='h-4 w-4' />}
-                Enroll & Continue
+              <Button
+                size={'sm'}
+                className={isComplete ? 'shrink-0 gap-2 bg-green-600 hover:bg-green-700 text-white' : 'shrink-0 gap-2'}
+                onClick={isEnrolled ? () => router.push('/course/' + course.cid) : enrollAndContinue}
+                disabled={enrolling}
+              >
+                {enrolling ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : isComplete ? (
+                  <CheckCircle2 className='h-4 w-4' />
+                ) : (
+                  <PlayCircle className='h-4 w-4' />
+                )}
+                {isComplete ? 'Review Course' : isEnrolled ? 'Continue' : 'Enroll & Continue'}
               </Button>
             ) : (
               <Link href={'/workspace/edit-course/' + course?.cid}>

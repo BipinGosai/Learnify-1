@@ -6,6 +6,7 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Radix Dialog wrappers with consistent styling.
 function Dialog({
   ...props
 }) {

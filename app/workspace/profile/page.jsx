@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import axios from 'axios'
 
+// Profile page where users can view and edit their name.
 function Profile() {
   const { userDetail, setUserDetail } = useContext(UserDetailContext);
   const [isEditing, setIsEditing] = useState(false);
@@ -15,6 +16,7 @@ function Profile() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Reset draft values when leaving edit mode.
     if (!isEditing) {
       setNameDraft(userDetail?.name ?? '');
       setError(null);
@@ -22,6 +24,7 @@ function Profile() {
     }
   }, [isEditing, userDetail?.name]);
 
+  // Enable save only when changes are valid.
   const canSave = useMemo(() => {
     const next = (nameDraft ?? '').trim();
     const current = (userDetail?.name ?? '').trim();
@@ -32,6 +35,7 @@ function Profile() {
     setError(null);
     setSaving(true);
     try {
+      // Persist profile updates via the API.
       const resp = await axios.patch('/api/user', { name: nameDraft });
       const updatedUser = resp?.data;
       if (updatedUser?.email) {

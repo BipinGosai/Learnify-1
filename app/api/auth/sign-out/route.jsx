@@ -4,6 +4,7 @@ import { authSessionsTable } from '@/config/schema';
 import { eq } from 'drizzle-orm';
 import { getSessionCookieName, hashSessionToken } from '@/lib/session';
 
+// Parse a cookie value from the raw Cookie header.
 function parseCookie(cookieHeader, name) {
   if (typeof cookieHeader !== 'string' || cookieHeader.length === 0) return null;
   const parts = cookieHeader.split(';');
@@ -16,6 +17,7 @@ function parseCookie(cookieHeader, name) {
 
 export async function POST(req) {
   try {
+    // Find the current session token and remove it from the DB.
     const cookieHeader = req?.headers?.get?.('cookie') ?? req?.headers?.get?.('Cookie');
     const rawToken = parseCookie(cookieHeader, getSessionCookieName());
     const tokenHash = rawToken ? hashSessionToken(rawToken) : null;
@@ -26,6 +28,7 @@ export async function POST(req) {
     console.error('/api/auth/sign-out error:', e);
   }
 
+  // Always clear the cookie on the client, even if DB cleanup fails.
   const res = NextResponse.json({ ok: true });
   res.cookies.set(getSessionCookieName(), '', {
     httpOnly: true,

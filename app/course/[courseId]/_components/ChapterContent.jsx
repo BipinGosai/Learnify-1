@@ -7,12 +7,13 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import YouTube from "react-youtube";
 import { toast } from "sonner";
 
+// Main reader for chapter content, videos, and completion actions.
 function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
     const { courseId } = useParams();
     const courseContent = courseInfo?.courses?.courseContent;
     const enrollCourse = courseInfo?.enrollCourse;
 
-    // Debug logging
+    // Debug logging for development builds.
     useEffect(() => {
         console.log('ChapterContent - courseInfo:', courseInfo);
         console.log('ChapterContent - courseContent:', courseContent);
@@ -22,7 +23,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
     const [loading, setLoading] = useState(false);
     const [showVideos, setShowVideos] = useState(true);
 
-    // Parse courseContent if it's a string
+    // Normalize courseContent into an array we can safely read from.
     const parsedCourseContent = useMemo(() => {
         if (!courseContent) {
             console.log('No courseContent');
@@ -49,6 +50,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
     const videoData = parsedCourseContent?.[selectedChapterIndex]?.youtubeVideo;
     const topics = parsedCourseContent?.[selectedChapterIndex]?.courseData?.topics;
 
+    // YouTube embed options are stable, so memoize them once.
     const youtubeOpts = useMemo(
         () => ({
             width: "100%",
@@ -61,6 +63,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
         []
     );
 
+    // Completed chapters are stored per enrollment.
     const completedChapter = useMemo(
         () => (Array.isArray(enrollCourse?.completedChapters) ? enrollCourse.completedChapters : []),
         [enrollCourse?.completedChapters]
@@ -71,6 +74,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
 
     const pendingTopicIndexRef = useRef(null);
 
+    // Reset the topic index when switching chapters.
     useEffect(() => {
         if (pendingTopicIndexRef.current !== null) {
             setSelectedTopicIndex(pendingTopicIndexRef.current);
@@ -91,6 +95,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
         return chapterTopics ? 1 : 0;
     };
 
+    // Navigate to the previous topic or previous chapter boundary.
     const handlePrev = () => {
         if (topicList.length === 0) return;
 
@@ -107,6 +112,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
         setSelectedChapterIndex(prevChapterIndex);
     };
 
+    // Navigate to the next topic or next chapter boundary.
     const handleNext = () => {
         if (topicList.length === 0) return;
 
@@ -123,6 +129,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
         }
     };
 
+    // Mark the current chapter as completed for this enrollment.
     const markChapterCompleted = async () => {
         setLoading(true);
         try {
@@ -140,6 +147,7 @@ function ChapterContent({ courseInfo, refreshData, isLoading = false }) {
         }
     };
 
+    // Mark the current chapter as incomplete.
     const markInCompleteChapter = async () => {
         setLoading(true);
         try {

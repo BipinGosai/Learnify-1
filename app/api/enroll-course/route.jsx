@@ -6,7 +6,7 @@ import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
 const HIDDEN_COURSE_IDS = new Set([25]);
 
-// Handle course enrollment
+// Handle course enrollment.
 export async function POST(req) {
   const { courseId } = await req.json();
   const userEmail = await getUserEmailFromRequestAsync(req);
@@ -19,7 +19,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "courseId is required" }, { status: 400 });
   }
 
-  // Check if course is already enrolled
+  // Check if the user is already enrolled to avoid duplicates.
   const enrollCourses = await db
     .select()
     .from(enrollCourseTable)
@@ -45,7 +45,7 @@ export async function POST(req) {
   return NextResponse.json({ resp: "Course already enrolled" });
 }
 
-// Fetch enrolled courses
+// Fetch enrolled courses (list or a single course if courseId is provided).
 export async function GET(req) {
   const userEmail = await getUserEmailFromRequestAsync(req);
   const { searchParams } = new URL(req.url);
@@ -56,6 +56,7 @@ export async function GET(req) {
   }
 
   if (courseId) {
+    // Pull enrollment plus professor info for a single course.
     const result = await db
       .select()
       .from(coursesTable)
@@ -88,7 +89,7 @@ export async function GET(req) {
       );
     }
 
-    // Ensure courseContent is properly parsed as array
+    // Ensure courseContent is properly parsed as array.
     const courseContent = course?.courseContent;
     let parsedCourseContent = courseContent;
     
@@ -116,6 +117,7 @@ export async function GET(req) {
     });
   }
 
+  // List view of verified enrollments.
   const result = await db
     .select()
     .from(coursesTable)
@@ -148,6 +150,7 @@ export async function GET(req) {
 }
 
 export  async function PUT(req) {
+  // Update chapter completion progress for the enrollment.
   const {completedChapter,courseId}=await req.json();
   const userEmail = await getUserEmailFromRequestAsync(req);
 
