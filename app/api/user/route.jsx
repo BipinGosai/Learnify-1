@@ -6,6 +6,7 @@ import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
 export async function POST(req){
     try {
+        // Create a user if they do not exist (idempotent by email).
         const body = await req.json().catch(() => ({}));
         const email = body?.email;
         const nameFromBody = body?.name;
@@ -14,11 +15,12 @@ export async function POST(req){
             return NextResponse.json({ error: 'email is required' }, { status: 400 });
         }
 
+        // Fallback to the local-part of the email if no name is provided.
         const name = (typeof nameFromBody === 'string' && nameFromBody.trim().length > 0)
             ? nameFromBody.trim()
             : email.split('@')[0];
 
-        // if user already exists
+        // If user already exists, return it directly.
         const existingUsers = await db
             .select()
             .from(usersTable)
@@ -28,7 +30,7 @@ export async function POST(req){
             return NextResponse.json(existingUsers[0]);
         }
 
-        // insert new user (race-safe)
+        // Insert new user (race-safe: handle duplicate insert gracefully).
         try {
             const inserted = await db
                 .insert(usersTable)
@@ -60,11 +62,13 @@ export async function POST(req){
 
 export async function PATCH(req) {
     try {
+        // Only authenticated users can update their profile.
         const email = await getUserEmailFromRequestAsync(req);
         if (!email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Validate and sanitize the new name.
         const body = await req.json().catch(() => ({}));
         const nameFromBody = body?.name;
         const name = (typeof nameFromBody === 'string') ? nameFromBody.trim() : '';
@@ -75,6 +79,7 @@ export async function PATCH(req) {
             return NextResponse.json({ error: 'name is too long' }, { status: 400 });
         }
 
+        // Persist the change and return the updated record.
         const updated = await db
             .update(usersTable)
             .set({ name })

@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Card for a single course, used across dashboard and explore views.
 function CourseCard({ course }) {
   const courseJson = course?.courseJson.course;
   const bannerSrc = typeof course?.bannerImageUrl === 'string' ? course.bannerImageUrl.trim() : '';
@@ -28,6 +29,7 @@ function CourseCard({ course }) {
   const verifiedBy = course?.verifiedBy;
   const reviewedDate = course?.reviewReviewedAt ? new Date(course.reviewReviewedAt) : null;
 
+  // Enroll the user, then jump into the course reader.
   const enrollAndContinue = async () => {
     if (!course?.cid) return;
     setEnrolling(true);
@@ -60,6 +62,7 @@ function CourseCard({ course }) {
     return [];
   };
 
+  // Compute progress using either content length or metadata.
   const getProgressPercent = () => {
     const enroll = course?.enrollCourse;
     if (!enroll) return null;

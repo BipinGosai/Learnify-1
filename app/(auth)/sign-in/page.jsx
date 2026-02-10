@@ -7,12 +7,14 @@ import axios from "axios";
 import { setStoredUser } from "@/lib/authClient";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
+// Allowed email providers to keep onboarding predictable.
 const VALID_EMAIL_DOMAINS = [
   'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
   'icloud.com', 'protonmail.com', 'aol.com', 'mail.com',
   'zoho.com', 'yandex.com', 'gmx.com', 'proton.me'
 ];
 
+// Human-friendly email validation with helpful error messages.
 function getEmailError(value) {
   if (typeof value !== "string") return "Email is required";
   const email = value.trim();
@@ -54,6 +56,7 @@ function getEmailError(value) {
   return null;
 }
 
+// Sign-in page with client-side validation and server auth call.
 export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -62,6 +65,7 @@ export default function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Memoize validation so UI updates are quick and consistent.
   const emailError = useMemo(() => getEmailError(email), [email]);
   const passwordError = useMemo(() => {
     if (!password) return "Password is required";
@@ -71,6 +75,7 @@ export default function SignInPage() {
     return null;
   }, [password]);
 
+  // Button is enabled only when inputs are valid and not already submitting.
   const canSubmit = useMemo(() => {
     return !emailError && !passwordError && !submitting;
   }, [emailError, passwordError, submitting]);
@@ -84,6 +89,7 @@ export default function SignInPage() {
     }
     setSubmitting(true);
     try {
+      // Authenticate with the API and store the user for fast client bootstrap.
       const resp = await axios.post("/api/auth/sign-in", {
         email: email.trim().toLowerCase(),
         password,
@@ -130,6 +136,7 @@ export default function SignInPage() {
         </div>
 
         <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-card">
+          {/* Mobile header when the image panel is hidden. */}
           <div className="lg:hidden flex items-center gap-2 text-foreground mb-8">
             <h2 className="text-xl font-bold tracking-tight">Learnify</h2>
           </div>

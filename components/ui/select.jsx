@@ -6,6 +6,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Radix Select wrappers with Learnify styling.
 function Select({
   ...props
 }) {

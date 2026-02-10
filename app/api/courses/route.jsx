@@ -5,6 +5,7 @@ import { and, desc, eq, sql, leftJoin } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getUserEmailFromRequestAsync } from "@/lib/authServer";
 
+// IDs that should never show up in public results.
 const HIDDEN_COURSE_IDS = new Set([25]);
 
 export async function GET(req) {
@@ -14,7 +15,7 @@ export async function GET(req) {
         const scope = searchParams.get("scope");
         const userEmail = await getUserEmailFromRequestAsync(req);
 
-        //  EXPLORE PAGE: show only verified courses from ALL users
+        // EXPLORE PAGE: show only verified courses from ALL users.
         if (scope === "explore" || courseId === "0") {
             const result = await db
                 .select({
@@ -31,7 +32,7 @@ export async function GET(req) {
                 )
                 .orderBy(desc(coursesTable.id));
 
-            // Transform the result to flatten the structure
+            // Transform the result to flatten the structure for the UI.
             const transformedResult = result.map(item => ({
                 ...item.course,
                 verifiedBy: item.professor ? {
@@ -44,10 +45,12 @@ export async function GET(req) {
 
             const filteredResult = transformedResult.filter(course => !HIDDEN_COURSE_IDS.has(course.id));
 
+            // Public view: no enrollment details if user is anonymous.
             if (!userEmail) {
                 return NextResponse.json(filteredResult || []);
             }
 
+            // If logged in, attach enrollment info for each course.
             const enrollRows = await db
                 .select()
                 .from(enrollCourseTable)
@@ -66,12 +69,12 @@ export async function GET(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Protected routes
+        // Protected routes: user must be authenticated.
         if (!userEmail) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Single course (owner only; used by edit-course page)
+        // Single course (owner only; used by edit-course page).
         if (courseId) {
             const rows = await db
                 .select()
@@ -80,19 +83,19 @@ export async function GET(req) {
 
             const course = rows?.[0];
 
-            // No course with this id anywhere in the system
+            // No course with this id anywhere in the system.
             if (!course) {
                 return NextResponse.json(null, { status: 404 });
             }
 
-            // If the requester owns the course, return it as-is
+            // If the requester owns the course, return it as-is.
             if (course.userEmail === userEmail) {
                 return NextResponse.json(course);
             }
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        //  User's own courses
+        // User's own courses (dashboard list).
         const result = await db
             .select({
                 course: coursesTable,
@@ -108,7 +111,7 @@ export async function GET(req) {
             )
             .orderBy(desc(coursesTable.id));
 
-        // Transform the result to flatten the structure
+        // Transform the result to flatten the structure for the UI.
         const transformedResult = result.map(item => ({
             ...item.course,
             verifiedBy: item.professor ? {
@@ -119,6 +122,7 @@ export async function GET(req) {
             } : null
         }));
 
+        // Join enrollment data to each owned course.
         const enrollRows = await db
             .select()
             .from(enrollCourseTable)
@@ -156,7 +160,7 @@ export async function DELETE(req) {
             return NextResponse.json({ error: "courseId is required" }, { status: 400 });
         }
 
-        // Verify course ownership
+        // Verify course ownership before deleting.
         const courses = await db
             .select()
             .from(coursesTable)
@@ -173,7 +177,7 @@ export async function DELETE(req) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
         }
 
-        // Delete the course
+        // Delete the course after ownership check passes.
         await db.delete(coursesTable).where(eq(coursesTable.cid, courseId));
 
         return NextResponse.json({

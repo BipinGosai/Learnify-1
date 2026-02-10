@@ -4,6 +4,7 @@ import { usersTable } from '@/config/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
+// Lightweight email validator for basic sanity checks.
 function isValidEmail(email) {
   if (typeof email !== 'string') return false;
   const value = email.trim();
@@ -34,11 +35,13 @@ function isValidEmail(email) {
 
 export async function POST(req) {
   try {
+    // Read the sign-up payload.
     const body = await req.json().catch(() => ({}));
     const name = typeof body?.name === 'string' ? body.name.trim() : '';
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body?.password === 'string' ? body.password : '';
 
+    // Basic validation to keep the database clean.
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'name, email and password are required' }, { status: 400 });
     }
@@ -49,11 +52,13 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Password must be 8 characters or less' }, { status: 400 });
     }
 
+    // Prevent duplicates by checking the email first.
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (existing?.length) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
     }
 
+    // Hash the password before persisting it.
     const passwordHash = await bcrypt.hash(password, 10);
     const inserted = await db
       .insert(usersTable)
@@ -61,6 +66,7 @@ export async function POST(req) {
       .returning();
     const user = inserted?.[0];
 
+    // Return a safe, minimal user payload.
     return NextResponse.json({
       user: { id: user?.id, name: user?.name ?? name, email },
     });

@@ -19,8 +19,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
+// Lazy-load the create course dialog to keep sidebar light.
 const AddNewCourseDialog = dynamic(() => import('./AddNewCourseDialog'), { ssr: false })
 
+// Sidebar navigation items.
 const SidebarOptions=[
   {
     title:'Dashboard',
@@ -47,6 +49,7 @@ function AppSidebar() {
 
   const path = usePathname();
 
+  // Active route helper for styling.
   const isActive = (itemPath) => {
     if (!path) return false;
     // Dashboard should only be active on the exact route.

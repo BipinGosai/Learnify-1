@@ -6,6 +6,7 @@ import { ChevronDownIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Radix Accordion wrappers with Learnify styling.
 function Accordion({
   ...props
 }) {

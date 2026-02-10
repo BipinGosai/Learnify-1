@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 
 
+// Card for a course the user is currently learning.
 function EnrollCourseCard({course,enrollCourse}) {
     const courseJson = course?.courseJson?.course || course;
     const bannerSrc = typeof course?.bannerImageUrl === 'string' ? course.bannerImageUrl.trim() : '';
@@ -23,6 +24,7 @@ function EnrollCourseCard({course,enrollCourse}) {
     const verifiedBy = course?.verifiedBy;
     const reviewedDate = course?.reviewReviewedAt ? new Date(course.reviewReviewedAt) : null;
 
+// Compute progress percentage based on completed chapters.
 const CalculatePerProgress = () => {
   const completed = enrollCourse?.completedChapters?.length ?? 0;
   const total = course?.courseContent?.length ?? 1;

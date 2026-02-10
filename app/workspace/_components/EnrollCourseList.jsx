@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 
 
+// List of courses the user has enrolled in.
 function EnrollCourseList() {
 
   const [enrolledCourseList, setEnrolledCourseList]=useState([]);
@@ -18,6 +19,7 @@ function EnrollCourseList() {
     return name === 'ruby';
   };
     useEffect(()=>{
+        // Load enrollments on first render.
         GetEnrolledCourse();
     }, [])
     const GetEnrolledCourse= async ()=>{

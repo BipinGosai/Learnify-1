@@ -1,6 +1,7 @@
 
 import { integer, pgTable, varchar, boolean, json, timestamp } from "drizzle-orm/pg-core";
 
+// Core user accounts.
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 255 }).notNull(),
@@ -9,6 +10,7 @@ export const usersTable = pgTable("users", {
   subscriptionId: varchar('subscriptionId'),
 });
 
+// Session records for login persistence (cookie token hashes live here).
 export const authSessionsTable = pgTable("auth_sessions", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   userEmail: varchar('userEmail', { length: 255 }).references(() => usersTable.email).notNull(),
@@ -17,6 +19,7 @@ export const authSessionsTable = pgTable("auth_sessions", {
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// AI-generated or user-created courses.
 export const coursesTable = pgTable("courses",{
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
   cid:varchar().notNull().unique(),
@@ -41,6 +44,7 @@ export const coursesTable = pgTable("courses",{
     reviewReviewedAt: timestamp('reviewReviewedAt', { withTimezone: true }),
 })
 
+// Professors who can review course content.
 export const professorsTable = pgTable('professors', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   email: varchar({ length: 255 }).notNull().unique(),
@@ -50,6 +54,7 @@ export const professorsTable = pgTable('professors', {
   createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// User enrollments and progress per course.
 export const enrollCourseTable=pgTable('enrollCourse',{
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   cid:varchar('cid').references(()=>coursesTable.cid, { onDelete: 'cascade' }),

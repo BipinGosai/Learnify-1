@@ -9,6 +9,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+// Enrolled course view with chapter sidebar and content reader.
 function Course() {
   const { courseId } = useParams();
   const [courseInfo, setCourseInfo] = useState(null);
@@ -17,6 +18,7 @@ function Course() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Load the enrolled course when the route param is available.
     if (courseId) {
       GetEnrolledCourseById();
     }
@@ -26,6 +28,7 @@ function Course() {
     setIsLoading(true);
     setLoadError(null);
     try {
+      // Pull course details plus enrollment status.
       const result = await axios.get("/api/enroll-course?courseId=" + courseId);
       console.log("API RESULT ", result.data);
       setCourseInfo(result.data);
@@ -77,7 +80,9 @@ function Course() {
           </div>
         ) : (
           <div className="flex w-full flex-col md:flex-row gap-4 md:gap-6 items-start">
+            {/* Sidebar shows chapters and completion status. */}
             {isSidebarOpen && <ChapterListSidebar courseInfo={courseInfo} isLoading={isLoading} />}
+            {/* Main area shows video + topic content. */}
             <ChapterContent courseInfo={courseInfo} refreshData={GetEnrolledCourseById} isLoading={isLoading} />
           </div>
         )}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/config/db';
 import { professorsTable } from '@/config/schema';
 
+// Quick email sanity check for input parsing.
 function isValidEmail(email) {
   if (typeof email !== 'string') return false;
   const v = email.trim();
@@ -9,6 +10,7 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+// Split a list of emails from text input (commas, semicolons, or newlines).
 function parseProfessorEmails(raw) {
   if (typeof raw !== 'string') return [];
   return raw
@@ -17,10 +19,12 @@ function parseProfessorEmails(raw) {
     .filter((s) => isValidEmail(s));
 }
 
+// Normalize strings for case-insensitive matching.
 function normalize(str = '') {
   return typeof str === 'string' ? str.toLowerCase().trim() : '';
 }
 
+// Convert professor specializations into a clean array.
 function getProfessorSpecializationArray(prof) {
   const specialization = prof?.specializations;
   if (!specialization) return [];
@@ -38,6 +42,7 @@ function getProfessorSpecializationArray(prof) {
   return [];
 }
 
+// Score professors by how well their specializations fit the course.
 function scoreProfessorForCourse(prof, courseName, courseCategory) {
   const spec = prof?.specializations;
   const specialization = Array.isArray(spec) 
@@ -72,10 +77,10 @@ function scoreProfessorForCourse(prof, courseName, courseCategory) {
 
 export async function GET(req) {
   try {
-    // Fetch all professors from database
+    // Fetch all professors from database.
     const professors = await db.select().from(professorsTable);
     
-    // Optionally filter by course if query params provided
+    // Optionally compute match scores if course params are provided.
     const { searchParams } = new URL(req.url);
     const courseCategory = searchParams.get('courseCategory') || '';
     const courseName = searchParams.get('courseName') || '';
@@ -88,7 +93,7 @@ export async function GET(req) {
       matchScore: courseCategory || courseName ? scoreProfessorForCourse(p, courseName, courseCategory) : 0,
     }));
 
-    // Sort by match score if filtering
+    // Sort by match score if filtering.
     if (courseCategory || courseName) {
       enrichedProfessors.sort((a, b) => b.matchScore - a.matchScore);
     }

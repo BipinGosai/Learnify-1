@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// Sidebar layout system with desktop + mobile support.
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
@@ -33,6 +34,7 @@ const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 const SidebarContext = React.createContext(null)
 
+// Hook for accessing sidebar state safely.
 function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {

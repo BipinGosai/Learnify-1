@@ -7,6 +7,7 @@ import CourseCard from './CourseCard';
 import { Loader2 } from 'lucide-react';
 import { UserDetailContext } from '@/context/UserDetailContext';
 
+// List of courses created by the current user.
 function CourseList() {
     const [courseList, setCourseList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,6 +17,7 @@ function CourseList() {
         const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
         return name === 'ruby';
     };
+    // Fetch the user's courses from the API.
     const GetCourseList = async () => {
         try {
             setLoading(true);
@@ -31,6 +33,7 @@ function CourseList() {
         }
     };
     useEffect(() => {
+        // Wait for user data before requesting personal courses.
         if (isUserLoading) return;
         if (userDetail?.email) {
             GetCourseList();

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { CheckCircle2, Loader2Icon } from "lucide-react";
 
+// Sidebar list of chapters with completion badges and topics.
 function ChapterListSidebar({ courseInfo, isLoading = false }) {
   const course = courseInfo?.courses;
   const enrollCourse =courseInfo?.enrollCourse;
@@ -19,7 +20,7 @@ function ChapterListSidebar({ courseInfo, isLoading = false }) {
   const { selectedChapterIndex, setSelectedChapterIndex } = useContext(SelectedChapterIndexContext)
   let completedChapter= enrollCourse?.completedChapters ?? [];
 
-  // Parse courseContent if it's a string
+  // Parse courseContent if it's a string.
   const parsedCourseContent = Array.isArray(courseContent) 
     ? courseContent 
     : (typeof courseContent === 'string' 

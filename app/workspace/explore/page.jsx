@@ -8,6 +8,7 @@ import CourseCard from '../_components/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
+// Inner component so Suspense can handle search params.
 function ExploreContent() {
     const searchParams = useSearchParams();
     const highlightCourseId = searchParams.get('courseId');
@@ -19,6 +20,7 @@ function ExploreContent() {
         const name = (course?.name || course?.courseJson?.course?.name || '').toString().toLowerCase().trim();
         return name === 'ruby';
     };
+    // Fetch all verified courses for exploration.
     const GetCourseList = async () => {
         try {
             setLoading(true);
@@ -37,6 +39,7 @@ function ExploreContent() {
         GetCourseList();
     }, []);
 
+    // Simple search that scores by match position.
     const normalizedQuery = searchTerm.trim().toLowerCase();
     const visibleCourses = useMemo(() => {
         if (!normalizedQuery) return courseList;
@@ -109,6 +112,7 @@ function ExploreContent() {
     )
 }
 
+// Wrap in Suspense to safely read search params.
 function Explore() {
     return (
         <Suspense

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { coursesTable } from '@/config/schema';
 
+// Prompt used to generate HTML content for each topic.
 const PROMPT = `Depends on Chapter name and Topic. Generate content for each topic in HTML and give the response in JSON format.
 Schema:
 {
@@ -19,6 +20,7 @@ Schema:
 :User Input:
 `;
 
+// Prompt used when a professor requests changes to the course layout.
 const FEEDBACK_PROMPT = `You are given a course JSON and professor feedback. Update the course to satisfy the feedback.
 Rules:
 - Keep existing fields unless feedback requires changes.
@@ -47,6 +49,7 @@ Schema:
 Course JSON:
 `;
 
+// Prompt used to auto-fill topics when a chapter is missing them.
 const TOPICS_PROMPT = `Generate a concise list of 4-6 topics for the given chapter.
 Rules:
 - Topics must be strings only.
@@ -55,6 +58,7 @@ Rules:
 Chapter:
 `;
 
+// Normalize course JSON so we consistently work with a { course } shape.
 const normalizeCourseLayout = (input) => {
     if (!input) return null;
     if (typeof input === 'string') {
@@ -68,6 +72,7 @@ const normalizeCourseLayout = (input) => {
     return input?.course ? input.course : input;
 };
 
+// Use AI to apply professor feedback to the course layout.
 const applyFeedbackToCourseLayout = async (courseLayout, feedback) => {
         if (!courseLayout || !feedback) return courseLayout;
         try {
@@ -94,7 +99,8 @@ const applyFeedbackToCourseLayout = async (courseLayout, feedback) => {
         return courseLayout;
 };
 
-    const ensureChapterTopics = async (chapter) => {
+// Ensure each chapter has topics; generate them if missing.
+const ensureChapterTopics = async (chapter) => {
         const topics = Array.isArray(chapter?.topics) ? chapter.topics.filter(Boolean) : [];
         if (topics.length > 0) return chapter;
         try {
@@ -116,7 +122,7 @@ const applyFeedbackToCourseLayout = async (courseLayout, feedback) => {
             console.error('Failed to generate topics for chapter:', chapter?.chapterName, error);
         }
         return { ...chapter, topics: [] };
-    };
+};
 
 export async function POST(req) {
     const { courseJson, courseTitle, courseId } = await req.json();
@@ -135,9 +141,11 @@ export async function POST(req) {
         );
     }
 
+    // Start from the provided layout or the one saved in the DB.
     const baseLayout = normalizeCourseLayout(courseJson) || normalizeCourseLayout(existingCourse?.courseJson);
     let workingLayout = baseLayout;
 
+    // If professor asked for changes, update the layout before generating content.
     if (existingCourse?.reviewStatus === 'needs_changes' && existingCourse?.reviewFeedback) {
         workingLayout = await applyFeedbackToCourseLayout(baseLayout, existingCourse.reviewFeedback);
     }
@@ -147,7 +155,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'courseJson.chapters is required' }, { status: 400 });
     }
 
-    // Check for duplicate VERIFIED course with same name and category
+    // Check for duplicate VERIFIED course with same name and category.
     const courseName = (courseTitle || existingCourse?.name || workingLayout?.name || '').trim();
     const courseCategory = (workingLayout?.category || existingCourse?.category || '').trim();
     if (courseName && courseCategory) {
@@ -177,6 +185,7 @@ export async function POST(req) {
         }
     }
 
+    // Ensure each chapter has topics before content generation.
     const normalizedChapters = await Promise.all(chapters.map((chapter) => ensureChapterTopics(chapter)));
     const chapterNameSet = new Set(
         normalizedChapters
@@ -211,6 +220,7 @@ export async function POST(req) {
                 };
             }
 
+            // Enrich the chapter with YouTube videos.
             const youtubeData = await GetYoutubeVideo(chapter?.chapterName);
             return {
                 youtubeVideo: youtubeData,
@@ -239,7 +249,7 @@ export async function POST(req) {
 
     console.log('Generated CourseContent:', JSON.stringify(filteredContent, null, 2));
 
-    // Save to database
+    // Save to database and reset verification workflow state.
     const updatedCourseJson = workingLayout
         ? { course: { ...workingLayout, noOfChapters: chapters.length } }
         : existingCourse?.courseJson;
@@ -266,8 +276,10 @@ export async function POST(req) {
     });
 }
 
+// Minimum length to filter out YouTube Shorts.
 const MIN_VIDEO_SECONDS = 300;
 
+// Convert ISO 8601 duration (PT#H#M#S) into seconds.
 const parseIsoDurationToSeconds = (isoDuration) => {
     if (!isoDuration) return 0;
     const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -278,7 +290,7 @@ const parseIsoDurationToSeconds = (isoDuration) => {
     return hours * 3600 + minutes * 60 + seconds;
 };
 
-// YouTube API helper function
+// YouTube API helper function.
 const GetYoutubeVideo = async (topic) => {
     try {
         const YOUTUBE_BASE_URL = 'https://www.googleapis.com/youtube/v3/search';

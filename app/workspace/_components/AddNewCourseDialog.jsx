@@ -28,6 +28,7 @@ import { toast } from 'sonner'
 import { useContext } from 'react'
 import { UserDetailContext } from '@/context/UserDetailContext'
 
+// Dialog that collects course details and triggers AI generation.
 function AddNewCourseDialog({ children }) {
 
     const [open, setOpen] = useState(false);
@@ -45,6 +46,7 @@ function AddNewCourseDialog({ children }) {
     const router = useRouter();
     const { userDetail } = useContext(UserDetailContext);
 
+    // Suggested course categories for the dropdown.
     const CATEGORY_OPTIONS = [
         'Programming & Software Development',
         'Web Development',
@@ -72,6 +74,7 @@ const onGenerate = async ()=>{
         console.log(formData);
         const courseId = uuidv4();
         try{
+        // Basic client-side validation to keep requests clean.
         if (!userDetail?.email) {
             toast.error('Please sign in to generate a course');
             return;
@@ -89,6 +92,7 @@ const onGenerate = async ()=>{
             return;
         }
         setLoading(true);
+        // Ask the API to generate the course layout.
         const result = await axios.post(
             '/api/generate-course-layout',
             {
@@ -114,6 +118,7 @@ const onGenerate = async ()=>{
             return;
         }
 
+        // Close dialog and jump to course editor.
         setOpen(false);
         setLoading(false);
         router.push('/workspace/edit-course/'+nextCourseId);

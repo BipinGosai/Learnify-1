@@ -5,6 +5,7 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
 
+// Simple progress bar wrapper around Radix.
 function Progress({
   className,
   value,

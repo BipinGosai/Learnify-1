@@ -6,17 +6,19 @@ import { getUserEmailFromRequestAsync } from '@/lib/authServer';
 
 export async function POST(req) {
     try {
+        // Only the course owner can cancel verification.
         const userEmail = await getUserEmailFromRequestAsync(req);
         if (!userEmail) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Read the course ID to cancel.
         const { courseId } = await req.json();
         if (!courseId) {
             return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
         }
 
-        // Verify course ownership and current status
+        // Verify course ownership and current status.
         const courses = await db
             .select()
             .from(coursesTable)
@@ -40,7 +42,7 @@ export async function POST(req) {
             );
         }
 
-        // Reset verification fields back to draft
+        // Reset verification fields back to draft.
         await db
             .update(coursesTable)
             .set({

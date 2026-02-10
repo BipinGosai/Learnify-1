@@ -25,6 +25,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 
+// Course summary + actions for generating content and submitting verification.
 function CourseInfo({ course, viewCourse, refreshCourse }) {
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -38,6 +39,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
     const router = useRouter();
 
     useEffect(() => {
+        // Avoid rendering until we are mounted (Next.js client safety).
         setIsMounted(true);
     }, []);
 
@@ -45,6 +47,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         let alive = true;
         (async () => {
             try {
+                // Fetch professor list to suggest a reviewer.
                 const params = new URLSearchParams();
                 if (course?.category) params.append('courseCategory', course.category);
                 if (course?.name) params.append('courseName', course.name);
@@ -88,6 +91,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
     const courseJson = typeof course.courseJson === 'string' ? JSON.parse(course.courseJson) : course.courseJson;
     const courseLayout = courseJson?.course;
 
+    // Convert chapter durations into total minutes.
     const getTotalDurationMinutes = () => {
         const chapters = courseLayout?.chapters;
         if (!Array.isArray(chapters) || chapters.length === 0) return null;
@@ -148,6 +152,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
 
     const totalDurationLabel = formatTotalDuration(getTotalDurationMinutes());
 
+    // Normalize content so we can check if it exists.
     const parsedCourseContent = (() => {
         const cc = course?.courseContent;
         if (!cc) return null;
@@ -251,6 +256,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         return matches;
     };
 
+    // Enroll the user and open the course reader.
     const enrollAndContinue = async () => {
         if (!course?.cid) return;
         setEnrolling(true);
@@ -264,6 +270,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         }
     };
 
+    // Send course to professor for verification.
     const SubmitForVerification = async () => {
         if (!isMounted) return;
 
@@ -331,6 +338,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         }
     };
 
+    // Revert a pending verification if the user changes their mind.
     const CancelVerification = async () => {
         if (!isMounted || !course?.cid) return;
 
@@ -350,6 +358,7 @@ function CourseInfo({ course, viewCourse, refreshCourse }) {
         }
     };
 
+// Generate content for all chapters via the AI service.
 const GenerateCourseContent = async () => {
     if (!isMounted) return;
     

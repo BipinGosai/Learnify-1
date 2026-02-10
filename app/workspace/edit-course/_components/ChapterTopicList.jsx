@@ -1,6 +1,7 @@
 import { Gift } from 'lucide-react';
 import React from 'react'
 
+// Visual timeline of chapters and topics for quick review.
 function ChapterTopicList({ course }) {
     const courseLayout = course?.courseJson?.course;
     return (

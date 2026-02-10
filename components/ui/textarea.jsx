@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// Multi-line text input with consistent styling.
 function Textarea({
   className,
   ...props

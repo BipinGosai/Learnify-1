@@ -7,10 +7,12 @@ import { coursesTable, professorsTable } from '@/config/schema';
 import { getUserEmailFromRequestAsync } from '@/lib/authServer';
 import { getAppBaseUrl, getProfessorEmail, sendProfessorVerificationEmail } from '@/lib/mail';
 
+// Hash the review token for storage.
 function sha256Hex(input) {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
+// Quick check to ensure the course has content before review.
 function isCourseContentGenerated(course) {
   const cc = course?.courseContent;
   if (!cc) return false;
@@ -19,10 +21,12 @@ function isCourseContentGenerated(course) {
   return false;
 }
 
+// Normalize strings for comparisons.
 function normalize(str = '') {
   return typeof str === 'string' ? str.toLowerCase().trim() : '';
 }
 
+// Score a professor based on how well they match the course.
 function scoreProfessorForCourse(prof, courseName, courseCategory) {
   const spec = prof?.specializations;
   const specialization = Array.isArray(spec) 
@@ -55,6 +59,7 @@ function scoreProfessorForCourse(prof, courseName, courseCategory) {
   return score;
 }
 
+// Pick the best available professor for this course.
 function pickBestProfessor(course, professors) {
   const courseCategory = normalize(course?.category || course?.courseJson?.course?.category);
   const courseName = normalize(course?.name || course?.courseJson?.course?.name);
@@ -76,11 +81,13 @@ function pickBestProfessor(course, professors) {
 
 export async function POST(req) {
   try {
+    // Only the course owner can submit for verification.
     const userEmail = await getUserEmailFromRequestAsync(req);
     if (!userEmail) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Read the course id and optional professor selection.
     const body = await req.json().catch(() => ({}));
     const courseId = typeof body?.courseId === 'string' ? body.courseId.trim() : '';
     const professorEmailInput = typeof body?.professorEmail === 'string' ? body.professorEmail.trim() : '';
@@ -99,6 +106,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
+    // Require content before asking a professor to review.
     if (!isCourseContentGenerated(course)) {
       return NextResponse.json({ error: 'Generate course content before submitting for verification' }, { status: 400 });
     }
@@ -108,7 +116,7 @@ export async function POST(req) {
       return NextResponse.json({ ok: true, status: 'pending_verification' });
     }
 
-    // Fetch all professors for matching/validation
+    // Fetch all professors for matching/validation.
     const allProfessors = await db.select().from(professorsTable);
     if (!allProfessors.length) {
       return NextResponse.json({ error: 'No professor available for this course category' }, { status: 400 });
@@ -120,6 +128,7 @@ export async function POST(req) {
     let assignedProfessor = null;
 
     if (professorEmailInput) {
+      // If a specific professor was chosen, verify they are a good match.
       const candidate = allProfessors.find((p) => normalize(p.email) === normalize(professorEmailInput));
       if (!candidate) {
         return NextResponse.json({ error: 'Selected professor is not allowed' }, { status: 400 });
@@ -132,6 +141,7 @@ export async function POST(req) {
 
       assignedProfessor = candidate;
     } else {
+      // Otherwise auto-assign the best matching professor.
       const best = pickBestProfessor(course, allProfessors);
       if (!best) {
         return NextResponse.json({ error: 'No professor available for this course category' }, { status: 400 });
@@ -147,6 +157,7 @@ export async function POST(req) {
     const baseUrl = getAppBaseUrl();
     const verificationLink = `${baseUrl}/verify/${rawToken}`;
 
+    // Store review state on the course.
     await db
       .update(coursesTable)
       .set({
@@ -159,6 +170,7 @@ export async function POST(req) {
       })
       .where(and(eq(coursesTable.cid, courseId), eq(coursesTable.userEmail, userEmail)));
 
+    // Send the review link to the professor.
     const emailResult = await sendProfessorVerificationEmail({
       to: professorEmail,
       courseName: course?.courseJson?.course?.name ?? course?.name,
